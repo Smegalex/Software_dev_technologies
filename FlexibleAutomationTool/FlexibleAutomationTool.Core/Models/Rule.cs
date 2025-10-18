@@ -1,0 +1,29 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace FlexibleAutomationTool.Core.Models
+{
+    public class Rule
+    {       
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public FlexibleAutomationTool.Core.Triggers.Trigger Trigger { get; set; } = null!;
+        public FlexibleAutomationTool.Core.Actions.Action Action { get; set; } = null!;
+        public bool IsActive { get; set; } = true;
+
+        public void CheckTrigger()
+        {
+            if (Trigger.ShouldExecute())
+                Execute();
+        }
+
+        public void Execute()
+        {
+            Action.Execute();
+        }
+    }
+}
