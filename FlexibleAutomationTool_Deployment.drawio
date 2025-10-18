@@ -1,0 +1,48 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" version="28.2.7">
+  <diagram name="Page-1" id="PVQvjTKCueqNLHidWUIS">
+    <mxGraphModel dx="1213" dy="623" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ixNueOEOV-wrQjdjpjtW-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;endFill=0;" edge="1" parent="1" source="ixNueOEOV-wrQjdjpjtW-1" target="ixNueOEOV-wrQjdjpjtW-3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="510" y="110" />
+              <mxPoint x="510" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ixNueOEOV-wrQjdjpjtW-1" value="&amp;lt;&amp;lt;device&amp;gt;&amp;gt;:&lt;div&gt;Client1 PC: Windows OS&lt;/div&gt;" style="verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="140" y="30" width="290" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="ixNueOEOV-wrQjdjpjtW-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;startFill=0;endArrow=none;endFill=0;" edge="1" parent="1" source="ixNueOEOV-wrQjdjpjtW-2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="700" y="270" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="510" y="450" />
+              <mxPoint x="510" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ixNueOEOV-wrQjdjpjtW-2" value="&amp;lt;&amp;lt;device&amp;gt;&amp;gt;:&lt;div&gt;Client2 PC: Windows OS&lt;/div&gt;" style="verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="140" y="370" width="290" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="ixNueOEOV-wrQjdjpjtW-3" value="&amp;lt;&amp;lt;device&amp;gt;&amp;gt;:&lt;div&gt;ApplicationServer: Linux OS&lt;/div&gt;" style="verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="609" y="190" width="290" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="ixNueOEOV-wrQjdjpjtW-4" value="&amp;lt;&amp;lt;execution environment&amp;gt;&amp;gt;:&lt;div&gt;.NET runtime&lt;/div&gt;" style="verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="190" y="90" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ixNueOEOV-wrQjdjpjtW-5" value="&amp;lt;&amp;lt;execution environment&amp;gt;&amp;gt;:&lt;div&gt;.NET runtime&lt;/div&gt;" style="verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="195" y="430" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ixNueOEOV-wrQjdjpjtW-6" value="&amp;lt;&amp;lt;execution environment&amp;gt;&amp;gt;:&lt;div&gt;.NET runtime&lt;/div&gt;" style="verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="664" y="250" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ixNueOEOV-wrQjdjpjtW-9" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;http&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="549" y="240" width="60" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
