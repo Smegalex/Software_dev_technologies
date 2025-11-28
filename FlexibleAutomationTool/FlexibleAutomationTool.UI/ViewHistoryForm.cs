@@ -1,4 +1,5 @@
 using FlexibleAutomationTool.Core.Models;
+using FlexibleAutomationTool.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,14 +10,14 @@ namespace FlexibleAutomationTool.UI
     public partial class ViewHistoryForm : Form
     {
         private readonly string? _filterLoggedBy;
-        private readonly Services.AutomationEventHandler? _events;
+        private readonly Logger? _logger;
 
-        public ViewHistoryForm(IEnumerable<LogEntry> entries, Services.AutomationEventHandler? events = null, string? filterLoggedBy = null)
+        public ViewHistoryForm(IEnumerable<LogEntry> entries, Services.AutomationEventHandler? events = null, string? filterLoggedBy = null, Logger? logger = null)
         {
             InitializeComponent();
 
             _filterLoggedBy = filterLoggedBy;
-            _events = events;
+            _logger = logger;
 
             if (entries != null)
             {
@@ -26,12 +27,15 @@ namespace FlexibleAutomationTool.UI
                 }
             }
 
-            if (_events != null)
+            if (_logger != null)
             {
-                _events.LogEntryAdded += OnLogEntryAdded;
-
-                // Unsubscribe when form closes
-                this.FormClosed += (s, e) => _events.LogEntryAdded -= OnLogEntryAdded;
+                _logger.LogAdded += OnLogAdded;
+                this.FormClosed += (s, e) => _logger.LogAdded -= OnLogAdded;
+            }
+            else if (events != null)
+            {
+                events.LogEntryAdded += OnLogEntryAdded;
+                this.FormClosed += (s, e) => events.LogEntryAdded -= OnLogEntryAdded;
             }
         }
 
@@ -39,11 +43,9 @@ namespace FlexibleAutomationTool.UI
         {
             if (entry == null) return;
 
-            // respect filter
             if (!string.IsNullOrWhiteSpace(_filterLoggedBy) && !string.Equals(entry.LoggedBy, _filterLoggedBy, StringComparison.OrdinalIgnoreCase))
                 return;
 
-            // Ensure we update control on UI thread
             if (listBoxHistory.InvokeRequired)
             {
                 listBoxHistory.BeginInvoke((Action)(() => listBoxHistory.Items.Add($"[{entry.Timestamp:yyyy-MM-dd HH:mm:ss}] {entry.LoggedBy}: {entry.Message}")));
@@ -53,5 +55,7 @@ namespace FlexibleAutomationTool.UI
                 listBoxHistory.Items.Add($"[{entry.Timestamp:yyyy-MM-dd HH:mm:ss}] {entry.LoggedBy}: {entry.Message}");
             }
         }
+
+        private void OnLogAdded(LogEntry entry) => OnLogEntryAdded(entry);
     }
 }

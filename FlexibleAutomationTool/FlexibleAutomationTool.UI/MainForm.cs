@@ -138,6 +138,26 @@ namespace FlexibleAutomationTool.UI
             }
         }
 
+        private void listBoxRules_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (listBoxRules.SelectedItem is Rule selected)
+            {
+                // propertyGrid is added to designer; show selected rule's properties
+                try
+                {
+                    propertyGridRule.SelectedObject = selected;
+                }
+                catch
+                {
+                    // ignore if property grid not present
+                }
+            }
+            else
+            {
+                try { propertyGridRule.SelectedObject = null; } catch { }
+            }
+        }
+
         // New: View History for selected rule or global
         private void btnViewHistory_Click(object? sender, EventArgs e)
         {
@@ -154,7 +174,7 @@ namespace FlexibleAutomationTool.UI
                 entries = _engine.GetHistory();
             }
 
-            var dlg = new ViewHistoryForm(entries, _eventHandler, filterBy);
+            var dlg = new ViewHistoryForm(entries, _eventHandler, filterBy, _logger);
             // show modeless so user can continue interacting with main form
             dlg.Show(this);
         }
@@ -169,6 +189,7 @@ namespace FlexibleAutomationTool.UI
                 if (res == DialogResult.OK)
                 {
                     _repo.Update(dlg.EditedRule);
+                    _logger.Log(dlg.EditedRule.Name, "Edited");
                     RefreshRulesList();
                 }
             }

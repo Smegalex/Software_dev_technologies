@@ -16,7 +16,14 @@ namespace FlexibleAutomationTool.Core.Actions.InternalActions
 
         public override void Execute()
         {
-            _messageBoxService.Show(Message, Title);
+            try
+            {
+                _messageBoxService.Show(Message, Title);
+            }
+            catch (System.Exception ex)
+            {
+                throw new System.InvalidOperationException($"Failed to show message box: {ex.Message}", ex);
+            }
         }
 
         public override bool Validate() => !string.IsNullOrWhiteSpace(Message);

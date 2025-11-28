@@ -9,7 +9,14 @@ namespace FlexibleAutomationTool.Core.Actions.InternalActions
 
         public override void Execute()
         {
-            Process.Start(Path, Arguments ?? "");
+            try
+            {
+                Process.Start(Path, Arguments ?? "");
+            }
+            catch (System.Exception ex)
+            {
+                throw new System.InvalidOperationException($"Failed to start process '{Path}': {ex.Message}", ex);
+            }
         }
 
         public override bool Validate() => !string.IsNullOrWhiteSpace(Path);

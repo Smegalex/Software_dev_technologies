@@ -12,8 +12,26 @@ namespace FlexibleAutomationTool.Core.Actions
 
         public override void Execute()
         {
+            List<Exception> errors = null;
+
             foreach (var a in Actions)
-                a.Execute();
+            {
+                try
+                {
+                    a.Execute();
+                }
+                catch (Exception ex)
+                {
+                    // collect exceptions to report after attempting all actions
+                    errors ??= new List<Exception>();
+                    errors.Add(ex);
+                }
+            }
+
+            if (errors != null && errors.Count > 0)
+            {
+                throw new AggregateException("One or more actions in the macro failed.", errors);
+            }
         }
 
         public override bool Validate() => Actions.Count > 0;

@@ -1,4 +1,7 @@
-﻿namespace FlexibleAutomationTool.Core.Actions.InternalActions
+﻿using System;
+using System.IO;
+
+namespace FlexibleAutomationTool.Core.Actions.InternalActions
 {
     public class FileWriteAction : ActionBase
     {
@@ -7,7 +10,14 @@
 
         public override void Execute()
         {
-            File.WriteAllText(FilePath, Content);
+            try
+            {
+                File.WriteAllText(FilePath, Content);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to write file '{FilePath}': {ex.Message}", ex);
+            }
         }
 
         public override bool Validate() => !string.IsNullOrWhiteSpace(FilePath);

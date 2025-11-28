@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            button1 = new Button();
             btnStart = new Button();
             btnStop = new Button();
             btnAddRule = new Button();
@@ -37,17 +36,8 @@
             btnEditRule = new Button();
             listBoxRules = new ListBox();
             logListBox = new ListBox();
+            propertyGridRule = new PropertyGrid();
             SuspendLayout();
-            // 
-            // button1
-            // 
-            button1.Location = new Point(420, 397);
-            button1.Name = "button1";
-            button1.Size = new Size(75, 23);
-            button1.TabIndex = 0;
-            button1.Text = "button1";
-            button1.UseVisualStyleBackColor = true;
-            button1.Click += button1_Click;
             // 
             // btnStart
             // 
@@ -117,14 +107,22 @@
             listBoxRules.Name = "listBoxRules";
             listBoxRules.Size = new Size(240, 484);
             listBoxRules.TabIndex = 5;
+            listBoxRules.SelectedIndexChanged += listBoxRules_SelectedIndexChanged;
+            // 
+            // propertyGridRule
+            // 
+            propertyGridRule.Location = new Point(270, 12);
+            propertyGridRule.Name = "propertyGridRule";
+            propertyGridRule.Size = new Size(632, 200);
+            propertyGridRule.TabIndex = 9;
             // 
             // logListBox
             // 
             logListBox.FormattingEnabled = true;
             logListBox.ItemHeight = 15;
-            logListBox.Location = new Point(270, 12);
+            logListBox.Location = new Point(270, 220);
             logListBox.Name = "logListBox";
-            logListBox.Size = new Size(632, 559);
+            logListBox.Size = new Size(632, 374);
             logListBox.TabIndex = 6;
             // 
             // MainForm
@@ -132,6 +130,7 @@
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(914, 599);
+            Controls.Add(propertyGridRule);
             Controls.Add(logListBox);
             Controls.Add(listBoxRules);
             Controls.Add(btnEditRule);
@@ -140,7 +139,6 @@
             Controls.Add(btnAddRule);
             Controls.Add(btnStop);
             Controls.Add(btnStart);
-            Controls.Add(button1);
             Margin = new Padding(2);
             Name = "MainForm";
             Text = "MainForm";
@@ -149,8 +147,6 @@
         }
 
         #endregion
-
-        private Button button1;
         private Button btnStart;
         private Button btnStop;
         private Button btnAddRule;
@@ -159,5 +155,6 @@
         private ListBox logListBox;
         private Button btnViewHistory;
         private Button btnEditRule;
+        private PropertyGrid propertyGridRule;
     }
 }

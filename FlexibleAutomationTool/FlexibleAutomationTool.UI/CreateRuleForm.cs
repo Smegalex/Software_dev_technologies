@@ -60,23 +60,41 @@ namespace FlexibleAutomationTool.UI
             bool isFile = sel == "FileWrite";
             bool isMacro = sel == "Macro";
 
+            if (isMacro)
+            {
+                // Only macro textbox visible
+                lblMsgTitle.Visible = txtMsgTitle.Visible = false;
+                lblMsgBody.Visible = txtMsgBody.Visible = false;
+
+                lblProgramPath.Visible = txtRunPath.Visible = false;
+                lblArguments.Visible = txtRunArgs.Visible = false;
+
+                lblUrl.Visible = txtUrl.Visible = false;
+
+                lblFilePath.Visible = txtFilePath.Visible = false;
+                lblContent.Visible = txtFileContent.Visible = false;
+
+                lblMacro.Visible = txtMacroDef.Visible = true;
+                return;
+            }
+
             // Message
-            lblMsgTitle.Visible = txtMsgTitle.Visible = isMessage || isMacro;
-            lblMsgBody.Visible = txtMsgBody.Visible = isMessage || isMacro;
+            lblMsgTitle.Visible = txtMsgTitle.Visible = isMessage;
+            lblMsgBody.Visible = txtMsgBody.Visible = isMessage;
 
             // Run
-            lblProgramPath.Visible = txtRunPath.Visible = isRun || isMacro;
-            lblArguments.Visible = txtRunArgs.Visible = isRun || isMacro;
+            lblProgramPath.Visible = txtRunPath.Visible = isRun;
+            lblArguments.Visible = txtRunArgs.Visible = isRun;
 
             // Url
-            lblUrl.Visible = txtUrl.Visible = isUrl || isMacro;
+            lblUrl.Visible = txtUrl.Visible = isUrl;
 
             // File
-            lblFilePath.Visible = txtFilePath.Visible = isFile || isMacro;
-            lblContent.Visible = txtFileContent.Visible = isFile || isMacro;
+            lblFilePath.Visible = txtFilePath.Visible = isFile;
+            lblContent.Visible = txtFileContent.Visible = isFile;
 
             // Macro
-            lblMacro.Visible = txtMacroDef.Visible = isMacro;
+            lblMacro.Visible = txtMacroDef.Visible = false;
         }
 
         private void BtnOk_Click(object? sender, EventArgs e)

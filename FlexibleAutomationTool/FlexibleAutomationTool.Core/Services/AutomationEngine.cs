@@ -33,7 +33,6 @@ namespace FlexibleAutomationTool.Core.Services
 
         public void CreateRule(Rule rule)
         {
-            _repo.Add(rule);
             _logger.Log(rule.Name, "Created");
         }
 
@@ -62,7 +61,8 @@ namespace FlexibleAutomationTool.Core.Services
             catch (Exception ex)
             {
                 RuleFailed?.Invoke(rule, ex);
-                _logger.Log(rule.Name, $"Error executing rule: {ex.Message}");
+                // Log full exception details so stack trace and inner exceptions are available in history
+                _logger.Log(rule.Name, $"Error executing rule: {ex}");
             }
         }
 
