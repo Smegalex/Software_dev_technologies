@@ -1,6 +1,6 @@
-﻿namespace FlexibleAutomationTool.UI
+namespace FlexibleAutomationTool.UI
 {
-    partial class Form1
+    partial class ViewHistoryForm
     {
         /// <summary>
         /// Required designer variable.
@@ -28,13 +28,33 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
+            this.listBoxHistory = new System.Windows.Forms.ListBox();
+            this.SuspendLayout();
+            // 
+            // listBoxHistory
+            // 
+            this.listBoxHistory.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.listBoxHistory.FormattingEnabled = true;
+            this.listBoxHistory.ItemHeight = 15;
+            this.listBoxHistory.Location = new System.Drawing.Point(0, 0);
+            this.listBoxHistory.Name = "listBoxHistory";
+            this.listBoxHistory.Size = new System.Drawing.Size(800, 450);
+            this.listBoxHistory.TabIndex = 0;
+            // 
+            // ViewHistoryForm
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Text = "Form1";
+            this.Controls.Add(this.listBoxHistory);
+            this.Name = "ViewHistoryForm";
+            this.Text = "History";
+            this.ResumeLayout(false);
+
         }
 
         #endregion
+
+        private System.Windows.Forms.ListBox listBoxHistory;
     }
 }
-
