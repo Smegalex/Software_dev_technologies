@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace FlexibleAutomationTool.Core.Actions
 {
-    public class MacroAction : Action
+    public class MacroAction : ActionBase
     {
-        public List<Action> Actions { get; set; } = new();
+        public List<ActionBase> Actions { get; set; } = new();
 
         public override void Execute()
         {

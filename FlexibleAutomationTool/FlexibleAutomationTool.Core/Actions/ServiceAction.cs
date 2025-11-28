@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FlexibleAutomationTool.Core.Actions
+﻿namespace FlexibleAutomationTool.Core.Actions
 {
-    public class ServiceAction : Action
+    public class ServiceAction : ActionBase
     {
         public string ServiceType { get; set; } = string.Empty;
         public string Command { get; set; } = string.Empty;

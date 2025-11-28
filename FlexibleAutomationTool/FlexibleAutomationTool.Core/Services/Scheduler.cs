@@ -1,4 +1,5 @@
-﻿using FlexibleAutomationTool.Core.Repositories;
+﻿using FlexibleAutomationTool.Core.Models;
+using FlexibleAutomationTool.Core.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,9 @@ namespace FlexibleAutomationTool.Core.Services
         private Timer? _timer;
         private readonly IRuleRepository _repository;
 
+        // Подія для Engine
+        public event Action<Rule>? RuleReady;
+
         public Scheduler(IRuleRepository repository)
         {
             _repository = repository;
@@ -24,10 +28,14 @@ namespace FlexibleAutomationTool.Core.Services
 
         public void Stop() => _timer?.Dispose();
 
+
         private void CheckAllRules(object? state)
         {
             foreach (var r in _repository.GetAll())
-                r.CheckTrigger();
+            {
+                if (r.CheckTrigger())
+                    RuleReady?.Invoke(r);
+            }
         }
     }
 }

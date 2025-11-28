@@ -10,7 +10,7 @@ namespace FlexibleAutomationTool.Core.Models
     {
         public int Id { get; set; }
         public DateTime Timestamp { get; set; } = DateTime.Now;
-        public string RuleName { get; set; } = string.Empty;
+        public string LoggedBy { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
     }
 }

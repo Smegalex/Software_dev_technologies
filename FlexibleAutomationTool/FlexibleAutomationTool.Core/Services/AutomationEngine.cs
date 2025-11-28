@@ -1,35 +1,72 @@
-﻿using System;
+﻿using FlexibleAutomationTool.Core.Actions;
+using FlexibleAutomationTool.Core.Models;
+using FlexibleAutomationTool.Core.Repositories;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using FlexibleAutomationTool.Core.Repositories;
-using FlexibleAutomationTool.Core.Models;
 
 namespace FlexibleAutomationTool.Core.Services
 {
-        public class AutomationEngine(IRuleRepository repo, Scheduler scheduler, ServiceManager svcManager, Logger logger)
+    public class AutomationEngine
     {
-            private readonly IRuleRepository _repo = repo;
-            private readonly Scheduler _scheduler = scheduler;
-            private readonly ServiceManager _svcManager = svcManager;
-            private readonly Logger _logger = logger;
-        
-        public void CreateRule(Rule rule)
-            {
-                _repo.Add(rule);
-                _logger.Log(rule.Name, "created");
-            }
+        private readonly IRuleRepository _repo;
+        private readonly Scheduler _scheduler;
+        private readonly ServiceManager _serviceManager;
+        private readonly Logger _logger;
 
-            public void ExecuteRule(Rule rule)
-            {
-                rule.Execute();
-                _logger.Log(rule.Name, "executed");
-            }
+        public event Action<Rule>? RuleTriggered;
+        public event Action<Rule>? RuleExecuted;
+        public event Action<Rule, Exception>? RuleFailed;
 
-            public void Start() => _scheduler.Start();
-            public void Stop() => _scheduler.Stop();
-            public IEnumerable<LogEntry> GetHistory() => _logger.GetAll();
+        public AutomationEngine(IRuleRepository repo, Scheduler scheduler, ServiceManager svcManager, Logger logger)
+        {
+            _repo = repo;
+            _scheduler = scheduler;
+            _serviceManager = svcManager;
+            _logger = logger;
+
+            _scheduler.RuleReady += OnRuleReady;
         }
+
+        public void CreateRule(Rule rule)
+        {
+            _repo.Add(rule);
+            _logger.Log(rule.Name, "Created");
+        }
+
+
+        public void Start() {
+            _scheduler.Start();
+            _logger.Log("Automation Engine", "Started");
+        }
+        public void Stop() { 
+            _scheduler.Stop();
+            _logger.Log("Automation Engine", "Stopped");
+        }
+
+        private void OnRuleReady(Rule rule)
+        {
+            try
+            {
+                RuleTriggered?.Invoke(rule);
+                _logger.Log(rule.Name, "Rule triggered");
+
+                rule.Execute();
+
+                RuleExecuted?.Invoke(rule);
+                _logger.Log(rule.Name, "Rule executed");
+            }
+            catch (Exception ex)
+            {
+                RuleFailed?.Invoke(rule, ex);
+                _logger.Log(rule.Name, $"Error executing rule: {ex.Message}");
+            }
+        }
+
+        public IEnumerable<LogEntry> GetHistory() => _logger.GetAll();
     }
+}
 

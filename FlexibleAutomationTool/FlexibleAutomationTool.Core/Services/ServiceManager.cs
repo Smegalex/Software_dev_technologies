@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace FlexibleAutomationTool.Core.Services
 {
     public class ServiceManager
     {
-        private readonly Dictionary<string, object> _services = new();
-        public void Register(string name, object svc) { _services[name] = svc; }
-        public object? Get(string name) => _services.TryGetValue(name, out var s) ? s : null;
+        private readonly ConcurrentDictionary<string, object> _services = new();
+
+        public void Register<T>(string name, T svc) => _services[name] = svc!;
+        public T? Get<T>(string name) => _services.TryGetValue(name, out var s) && s is T t ? t : default;
     }
 }
