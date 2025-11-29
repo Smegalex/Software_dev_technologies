@@ -43,30 +43,16 @@ namespace FlexibleAutomationTool.Core.Data
 
                 if (found && ruleIdNotNull)
                 {
-                    // Migrate to nullable RuleId.
-                    // PRAGMA foreign_keys must be toggled outside of an explicit transaction, so turn it off first,
-                    // then perform the DDL within a transaction, and finally re-enable PRAGMA after commit.
-
-                    // Turn off foreign keys temporarily on the connection level
-                    using (var setOff = _connection.CreateCommand())
-                    {
-                        setOff.CommandText = "PRAGMA foreign_keys = OFF;";
-                        setOff.ExecuteNonQuery();
-                    }
-
+                    // migrate: rename old table, create new table, copy data with NULL for RuleId where 0 or invalid
                     using var tx = _connection.BeginTransaction();
+                    using var cmdRename = _connection.CreateCommand();
+                    cmdRename.Transaction = tx;
+                    cmdRename.CommandText = "ALTER TABLE ExecutionHistory RENAME TO ExecutionHistory_old;";
+                    cmdRename.ExecuteNonQuery();
 
-                    using (var cmdRename = _connection.CreateCommand())
-                    {
-                        cmdRename.Transaction = tx;
-                        cmdRename.CommandText = "ALTER TABLE ExecutionHistory RENAME TO ExecutionHistory_old;";
-                        cmdRename.ExecuteNonQuery();
-                    }
-
-                    using (var cmdCreate = _connection.CreateCommand())
-                    {
-                        cmdCreate.Transaction = tx;
-                        cmdCreate.CommandText = @"CREATE TABLE IF NOT EXISTS ExecutionHistory (
+                    using var cmdCreate = _connection.CreateCommand();
+                    cmdCreate.Transaction = tx;
+                    cmdCreate.CommandText = @"CREATE TABLE IF NOT EXISTS ExecutionHistory (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     RuleId INTEGER,
     ExecutedAt TEXT NOT NULL,
@@ -74,14 +60,12 @@ namespace FlexibleAutomationTool.Core.Data
     Message TEXT,
     FOREIGN KEY (RuleId) REFERENCES Rules(Id) ON DELETE CASCADE
 );";
-                        cmdCreate.ExecuteNonQuery();
-                    }
+                    cmdCreate.ExecuteNonQuery();
 
-                    using (var cmdCopy = _connection.CreateCommand())
-                    {
-                        cmdCopy.Transaction = tx;
-                        // convert invalid or zero RuleId to NULL to satisfy foreign key
-                        cmdCopy.CommandText = @"INSERT INTO ExecutionHistory (RuleId, ExecutedAt, Status, Message)
+                    using var cmdCopy = _connection.CreateCommand();
+                    cmdCopy.Transaction = tx;
+                    // convert invalid or zero RuleId to NULL to satisfy foreign key
+                    cmdCopy.CommandText = @"INSERT INTO ExecutionHistory (RuleId, ExecutedAt, Status, Message)
 SELECT CASE
          WHEN RuleId IS NULL THEN NULL
          WHEN RuleId = 0 THEN NULL
@@ -89,24 +73,14 @@ SELECT CASE
          ELSE RuleId END,
        ExecutedAt, Status, Message
 FROM ExecutionHistory_old;";
-                        cmdCopy.ExecuteNonQuery();
-                    }
+                    cmdCopy.ExecuteNonQuery();
 
-                    using (var cmdDrop = _connection.CreateCommand())
-                    {
-                        cmdDrop.Transaction = tx;
-                        cmdDrop.CommandText = "DROP TABLE IF EXISTS ExecutionHistory_old;";
-                        cmdDrop.ExecuteNonQuery();
-                    }
+                    using var cmdDrop = _connection.CreateCommand();
+                    cmdDrop.Transaction = tx;
+                    cmdDrop.CommandText = "DROP TABLE ExecutionHistory_old;";
+                    cmdDrop.ExecuteNonQuery();
 
                     tx.Commit();
-
-                    // Re-enable foreign keys on the connection AFTER the transaction has been committed
-                    using (var setOn = _connection.CreateCommand())
-                    {
-                        setOn.CommandText = "PRAGMA foreign_keys = ON;";
-                        setOn.ExecuteNonQuery();
-                    }
                 }
             }
             catch
@@ -173,75 +147,6 @@ CREATE TABLE IF NOT EXISTS MacroActionItems (
     FOREIGN KEY (ChildActionId) REFERENCES Actions(Id) ON DELETE CASCADE
 );";
             cmd2.ExecuteNonQuery();
-
-            // Ensure a system placeholder Rule exists when ExecutionHistory.RuleId may be NOT NULL in older DBs
-            try
-            {
-                using var cmdCheck = _connection.CreateCommand();
-                cmdCheck.CommandText = "SELECT Id FROM Rules WHERE Name=$name LIMIT 1";
-                cmdCheck.Parameters.AddWithValue("$name", "__System__");
-                var res = cmdCheck.ExecuteScalar();
-                if (res == null)
-                {
-                    using var tx = _connection.BeginTransaction();
-
-                    using (var cmdInsT = _connection.CreateCommand())
-                    {
-                        cmdInsT.Transaction = tx;
-                        cmdInsT.CommandText = "INSERT INTO Triggers (TriggerType, Schedule, EventSource, Condition) VALUES ($tt,$sch,$es,$cond);";
-                        cmdInsT.Parameters.AddWithValue("$tt", "EventTrigger");
-                        cmdInsT.Parameters.AddWithValue("$sch", (object)DBNull.Value);
-                        cmdInsT.Parameters.AddWithValue("$es", (object)DBNull.Value);
-                        cmdInsT.Parameters.AddWithValue("$cond", (object)DBNull.Value);
-                        cmdInsT.ExecuteNonQuery();
-                    }
-
-                    long triggerId;
-                    using (var cmdLast = _connection.CreateCommand())
-                    {
-                        cmdLast.Transaction = tx;
-                        cmdLast.CommandText = "SELECT last_insert_rowid();";
-                        triggerId = (long)cmdLast.ExecuteScalar();
-                    }
-
-                    using (var cmdInsA = _connection.CreateCommand())
-                    {
-                        cmdInsA.Transaction = tx;
-                        cmdInsA.CommandText = "INSERT INTO Actions (ActionType, ServiceType, Command, Parameters) VALUES ($at,$st,$cm,$pm);";
-                        cmdInsA.Parameters.AddWithValue("$at", "MessageBox");
-                        cmdInsA.Parameters.AddWithValue("$st", (object)DBNull.Value);
-                        cmdInsA.Parameters.AddWithValue("$cm", "System");
-                        cmdInsA.Parameters.AddWithValue("$pm", "System log placeholder");
-                        cmdInsA.ExecuteNonQuery();
-                    }
-
-                    long actionId;
-                    using (var cmdLast2 = _connection.CreateCommand())
-                    {
-                        cmdLast2.Transaction = tx;
-                        cmdLast2.CommandText = "SELECT last_insert_rowid();";
-                        actionId = (long)cmdLast2.ExecuteScalar();
-                    }
-
-                    using (var cmdInsR = _connection.CreateCommand())
-                    {
-                        cmdInsR.Transaction = tx;
-                        cmdInsR.CommandText = "INSERT INTO Rules (Name, Description, TriggerId, ActionId, IsActive) VALUES ($name,$desc,$tid,$aid,$ia);";
-                        cmdInsR.Parameters.AddWithValue("$name", "__System__");
-                        cmdInsR.Parameters.AddWithValue("$desc", "System placeholder rule for execution history");
-                        cmdInsR.Parameters.AddWithValue("$tid", triggerId);
-                        cmdInsR.Parameters.AddWithValue("$aid", actionId);
-                        cmdInsR.Parameters.AddWithValue("$ia", 0);
-                        cmdInsR.ExecuteNonQuery();
-                    }
-
-                    tx.Commit();
-                }
-            }
-            catch
-            {
-                // ignore failures creating system rule
-            }
         }
 
         public void Dispose()

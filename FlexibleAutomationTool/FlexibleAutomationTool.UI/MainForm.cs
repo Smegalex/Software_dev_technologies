@@ -7,7 +7,6 @@ using FlexibleAutomationTool.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
 using FlexibleAutomationTool.Core.Facades;
 using System.Diagnostics;
-using System.Windows.Forms;
 
 namespace FlexibleAutomationTool.UI
 {
@@ -144,7 +143,8 @@ namespace FlexibleAutomationTool.UI
         private void RefreshRulesList()
         {
             listBoxRules.Items.Clear();
-            foreach (var r in _repo.GetAll())
+            // Only display active user rules; hide internal '__System__' placeholder
+            foreach (var r in _repo.GetAll().Where(x => x.IsActive && !string.Equals(x.Name, "__System__", StringComparison.OrdinalIgnoreCase)))
             {
                 listBoxRules.Items.Add(r);
             }

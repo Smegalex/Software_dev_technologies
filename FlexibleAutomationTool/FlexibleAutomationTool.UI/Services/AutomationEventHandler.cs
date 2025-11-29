@@ -1,10 +1,6 @@
 ﻿using FlexibleAutomationTool.Core.Interfaces;
 using FlexibleAutomationTool.Core.Models;
 using FlexibleAutomationTool.Core.Services;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Windows.Forms;
 
 namespace FlexibleAutomationTool.UI.Services
 {

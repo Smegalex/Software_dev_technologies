@@ -133,3 +133,7 @@ $RECYCLE.BIN/
 _NCrunch*
 
 .vs/
+
+App/
+AppSmallerSize/
+*.zip

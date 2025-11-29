@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-namespace FlexibleAutomationTool.Core.Actions.InternalActions
+﻿namespace FlexibleAutomationTool.Core.Actions.InternalActions
 {
     public class FileWriteAction : ActionBase
     {

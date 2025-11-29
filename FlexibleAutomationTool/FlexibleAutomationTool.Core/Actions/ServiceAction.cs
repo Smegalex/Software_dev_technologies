@@ -8,7 +8,6 @@ namespace FlexibleAutomationTool.Core.Actions
 
         public override void Execute()
         {
-            // placeholder: call ServiceManager in real app
             Console.WriteLine($"[ServiceAction] Service={ServiceType} Command={Command} Params={Parameters}");
         }
 

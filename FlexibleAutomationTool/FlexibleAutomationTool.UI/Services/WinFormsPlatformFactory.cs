@@ -1,7 +1,5 @@
 using FlexibleAutomationTool.Core.Factories;
 using FlexibleAutomationTool.Core.Interfaces;
-using FlexibleAutomationTool.UI.Services;
-using System;
 using FlexibleAutomationTool.Core.Services;
 
 namespace FlexibleAutomationTool.UI.Services

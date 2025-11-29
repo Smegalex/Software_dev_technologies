@@ -7,7 +7,7 @@ namespace FlexibleAutomationTool.Core.Actions.InternalActions
         public string Message { get; set; } = "";
         public string Title { get; set; } = "";
 
-        // Allow DI via property so interpreter can create actions without requiring the service at construction time
+        // Allows DI via property so interpreter can create actions without requiring the service at construction time
         public IMessageBoxService? MessageBoxService { get; set; }
 
         public MessageBoxAction()

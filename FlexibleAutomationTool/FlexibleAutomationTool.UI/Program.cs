@@ -4,15 +4,10 @@ using FlexibleAutomationTool.Core.Repositories;
 using FlexibleAutomationTool.Core.Services;
 using FlexibleAutomationTool.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
-using System.Threading;
-using FlexibleAutomationTool.Core.Services;
 using FlexibleAutomationTool.Core.Interpreter;
 using FlexibleAutomationTool.Core.Factories;
 using FlexibleAutomationTool.Core.Facades;
 using FlexibleAutomationTool.Core.Data;
-using System;
-using System.IO;
-using System.Windows.Forms;
 
 namespace FlexibleAutomationTool.UI
 {

@@ -29,4 +29,4 @@ namespace FlexibleAutomationTool.Core.Triggers
         }
         public override bool Validate() => Hour >= 0 && Hour < 24 && Minute >= 0 && Minute < 60;
     }
-    }
+}
