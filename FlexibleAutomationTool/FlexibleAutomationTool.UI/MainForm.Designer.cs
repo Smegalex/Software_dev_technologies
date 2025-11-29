@@ -35,7 +35,6 @@
             btnViewHistory = new Button();
             btnEditRule = new Button();
             listBoxRules = new ListBox();
-            logListBox = new ListBox();
             propertyGridRule = new PropertyGrid();
             SuspendLayout();
             // 
@@ -113,17 +112,8 @@
             // 
             propertyGridRule.Location = new Point(270, 12);
             propertyGridRule.Name = "propertyGridRule";
-            propertyGridRule.Size = new Size(632, 200);
+            propertyGridRule.Size = new Size(632, 582);
             propertyGridRule.TabIndex = 9;
-            // 
-            // logListBox
-            // 
-            logListBox.FormattingEnabled = true;
-            logListBox.ItemHeight = 15;
-            logListBox.Location = new Point(270, 220);
-            logListBox.Name = "logListBox";
-            logListBox.Size = new Size(632, 374);
-            logListBox.TabIndex = 6;
             // 
             // MainForm
             // 
@@ -131,7 +121,6 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(914, 599);
             Controls.Add(propertyGridRule);
-            Controls.Add(logListBox);
             Controls.Add(listBoxRules);
             Controls.Add(btnEditRule);
             Controls.Add(btnViewHistory);
@@ -152,7 +141,6 @@
         private Button btnAddRule;
         private Button btnDeleteRule;
         private ListBox listBoxRules;
-        private ListBox logListBox;
         private Button btnViewHistory;
         private Button btnEditRule;
         private PropertyGrid propertyGridRule;

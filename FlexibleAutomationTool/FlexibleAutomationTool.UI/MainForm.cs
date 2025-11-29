@@ -5,6 +5,9 @@ using FlexibleAutomationTool.Core.Repositories;
 using FlexibleAutomationTool.Core.Services;
 using FlexibleAutomationTool.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
+using FlexibleAutomationTool.Core.Facades;
+using System.Diagnostics;
+using System.Windows.Forms;
 
 namespace FlexibleAutomationTool.UI
 {
@@ -13,8 +16,7 @@ namespace FlexibleAutomationTool.UI
         private readonly IRuleRepository _repo;
         private readonly Logger _logger;
         private readonly ServiceManager _svcManager;
-        private readonly Scheduler _scheduler;
-        private readonly AutomationEngine _engine;
+        private readonly IAutomationFacade _facade;
         private readonly IMessageBoxService _messageBoxService;
         private readonly MessageBoxAction _messageBoxAction;
         private readonly AutomationEventHandler _eventHandler;
@@ -25,8 +27,7 @@ namespace FlexibleAutomationTool.UI
             IRuleRepository repo,
             Logger logger,
             ServiceManager svcManager,
-            Scheduler scheduler,
-            AutomationEngine engine,
+            IAutomationFacade facade,
             IMessageBoxService messageBoxService,
             MessageBoxAction messageBoxAction,
             AutomationEventHandler eventHandler,
@@ -34,23 +35,45 @@ namespace FlexibleAutomationTool.UI
         {
             InitializeComponent();
 
+            // Ensure form is visible and centered (diagnostic for missing window)
+            try
+            {
+                this.StartPosition = FormStartPosition.CenterScreen;
+                this.WindowState = FormWindowState.Normal;
+                this.ShowInTaskbar = true;
+                this.Opacity = 1.0;
+                Debug.WriteLine("MainForm ctor: initialized and set visibility properties");
+                this.Shown += (s, e) => Debug.WriteLine("MainForm Shown event fired");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("MainForm visibility setup failed: " + ex);
+            }
+
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _svcManager = svcManager ?? throw new ArgumentNullException(nameof(svcManager));
-            _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
-            _engine = engine ?? throw new ArgumentNullException(nameof(engine));
+            _facade = facade ?? throw new ArgumentNullException(nameof(facade));
             _messageBoxService = messageBoxService ?? throw new ArgumentNullException(nameof(messageBoxService));
             _messageBoxAction = messageBoxAction ?? throw new ArgumentNullException(nameof(messageBoxAction));
             _eventHandler = eventHandler ?? throw new ArgumentNullException(nameof(eventHandler));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
 
-            // Підписка на UI івенти
-            _eventHandler.StatusUpdated += OnStatusUpdated;
-            _eventHandler.LogEntryAdded += OnLogEntryAdded;
+            // Initialization that may throw should not prevent form from showing
+            try
+            {
+                // Підписка на UI івенти (status only)
+                _eventHandler.StatusUpdated += OnStatusUpdated;
 
-            RefreshRulesList();
+                RefreshRulesList();
 
-            _engine.Start();
+                _facade.Start();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("MainForm initialization error: " + ex);
+                try { MessageBox.Show($"Initialization error:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); } catch { }
+            }
         }
 
         // Прості UI callback методи
@@ -58,15 +81,6 @@ namespace FlexibleAutomationTool.UI
         {
             this.Text = $"Automation Tool - {message}";
             // statusLabel.Text = message;
-        }
-
-        private void OnLogEntryAdded(LogEntry entry)
-        {
-            // Використовуємо LogEntry з Timestamp, LoggedBy, Message
-            var logMessage = $"[{entry.Timestamp:HH:mm:ss}] {entry.LoggedBy}: {entry.Message}";
-
-            // Додаємо у logListBox замість Console
-            logListBox.Items.Add(logMessage);
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -82,14 +96,12 @@ namespace FlexibleAutomationTool.UI
             // Dispose event handler first to unsubscribe from engine events
             _eventHandler?.Dispose();
             // Stop engine and scheduler to ensure background work ends
-            _engine?.Stop();
-
-            _scheduler?.Stop();
+            _facade?.Stop();
         }
 
         // Start / Stop
-        private void btnStart_Click(object sender, EventArgs e) => _engine.Start();
-        private void btnStop_Click(object sender, EventArgs e) => _engine.Stop();
+        private void btnStart_Click(object sender, EventArgs e) => _facade.Start();
+        private void btnStop_Click(object sender, EventArgs e) => _facade.Stop();
 
         // Add / Delete
         private void btnAddRule_Click(object sender, EventArgs e)
@@ -99,8 +111,7 @@ namespace FlexibleAutomationTool.UI
             var res = dlg.ShowDialog(this);
             if (res == DialogResult.OK && dlg.CreatedRule != null)
             {
-                _repo.Add(dlg.CreatedRule);
-                _engine.CreateRule(dlg.CreatedRule);
+                _facade.CreateRule(dlg.CreatedRule);
                 RefreshRulesList();
             }
         }
@@ -110,6 +121,7 @@ namespace FlexibleAutomationTool.UI
             if (listBoxRules.SelectedItem is Rule selected)
             {
                 _repo.Delete(selected.Id);
+                _logger.Log(selected.Name, "Deleted");
                 RefreshRulesList();
             }
         }
@@ -142,14 +154,12 @@ namespace FlexibleAutomationTool.UI
         {
             if (listBoxRules.SelectedItem is Rule selected)
             {
-                // propertyGrid is added to designer; show selected rule's properties
                 try
                 {
                     propertyGridRule.SelectedObject = selected;
                 }
                 catch
                 {
-                    // ignore if property grid not present
                 }
             }
             else
@@ -167,11 +177,11 @@ namespace FlexibleAutomationTool.UI
             {
                 // Show history filtered by rule name
                 filterBy = selected.Name;
-                entries = _engine.GetHistory().Where(le => string.Equals(le.LoggedBy, selected.Name, StringComparison.OrdinalIgnoreCase));
+                entries = _facade.GetHistory().Where(le => string.Equals(le.LoggedBy, selected.Name, StringComparison.OrdinalIgnoreCase));
             }
             else
             {
-                entries = _engine.GetHistory();
+                entries = _facade.GetHistory();
             }
 
             var dlg = new ViewHistoryForm(entries, _eventHandler, filterBy, _logger);

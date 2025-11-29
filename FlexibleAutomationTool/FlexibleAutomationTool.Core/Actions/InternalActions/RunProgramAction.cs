@@ -11,7 +11,12 @@ namespace FlexibleAutomationTool.Core.Actions.InternalActions
         {
             try
             {
-                Process.Start(Path, Arguments ?? "");
+                var psi = new ProcessStartInfo(Path)
+                {
+                    Arguments = Arguments ?? string.Empty,
+                    UseShellExecute = true
+                };
+                Process.Start(psi);
             }
             catch (System.Exception ex)
             {

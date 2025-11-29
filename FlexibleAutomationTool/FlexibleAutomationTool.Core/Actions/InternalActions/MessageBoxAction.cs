@@ -7,18 +7,27 @@ namespace FlexibleAutomationTool.Core.Actions.InternalActions
         public string Message { get; set; } = "";
         public string Title { get; set; } = "";
 
-        private readonly IMessageBoxService _messageBoxService;
+        // Allow DI via property so interpreter can create actions without requiring the service at construction time
+        public IMessageBoxService? MessageBoxService { get; set; }
 
+        public MessageBoxAction()
+        {
+        }
+
+        // Backwards-compatible constructor used by UI code that provides the service at creation time
         public MessageBoxAction(IMessageBoxService service)
         {
-            _messageBoxService = service;
+            MessageBoxService = service;
         }
 
         public override void Execute()
         {
             try
             {
-                _messageBoxService.Show(Message, Title);
+                if (MessageBoxService == null)
+                    throw new System.InvalidOperationException("No IMessageBoxService available to show message. Set MessageBoxService before executing this action.");
+
+                MessageBoxService.Show(Message, Title);
             }
             catch (System.Exception ex)
             {

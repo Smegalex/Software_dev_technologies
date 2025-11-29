@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace FlexibleAutomationTool.Core.Services
 {
@@ -12,29 +13,59 @@ namespace FlexibleAutomationTool.Core.Services
     {
         private Timer? _timer;
         private readonly IRuleRepository _repository;
+        private readonly ITriggerStrategy _strategy;
 
         // Подія для Engine
         public event Action<Rule>? RuleReady;
 
-        public Scheduler(IRuleRepository repository)
+        // Prevent overlapping invocations
+        private int _isRunning = 0;
+
+        // Lock to make Start/Stop thread-safe and avoid creating multiple timers
+        private readonly object _startLock = new();
+
+        public Scheduler(IRuleRepository repository, ITriggerStrategy strategy)
         {
             _repository = repository;
+            _strategy = strategy;
         }
 
         public void Start()
         {
-            _timer = new Timer(CheckAllRules, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
+            // Make start thread-safe: only one thread may create the timer
+            lock (_startLock)
+            {
+                if (_timer != null)
+                    return;
+
+                _timer = new Timer(CheckAllRules, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
+            }
         }
 
-        public void Stop() => _timer?.Dispose();
+        public void Stop()
+        {
+            // Stop can run concurrently; use Interlocked.Exchange to swap out the timer reference
+            var t = Interlocked.Exchange(ref _timer, null);
+            t?.Dispose();
+        }
 
 
         private void CheckAllRules(object? state)
         {
-            foreach (var r in _repository.GetAll())
+            // Prevent reentrant execution if previous run still in progress
+            if (Interlocked.Exchange(ref _isRunning, 1) == 1)
+                return;
+
+            try
             {
-                if (r.CheckTrigger())
+                foreach (var r in _strategy.GetReadyRules(_repository))
+                {
                     RuleReady?.Invoke(r);
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _isRunning, 0);
             }
         }
     }

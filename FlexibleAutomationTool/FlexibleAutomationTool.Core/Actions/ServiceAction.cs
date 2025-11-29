@@ -1,4 +1,4 @@
-﻿namespace FlexibleAutomationTool.Core.Actions
+namespace FlexibleAutomationTool.Core.Actions
 {
     public class ServiceAction : ActionBase
     {
