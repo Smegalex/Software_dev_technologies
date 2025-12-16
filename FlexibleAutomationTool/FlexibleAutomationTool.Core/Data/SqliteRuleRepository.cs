@@ -362,47 +362,163 @@ ORDER BY r.Id";
 
                 if (actionId != 0)
                 {
-                    // For simplicity, update Actions table for non-macro actions. Macro actions are not fully updated in-place here.
-                    using var cmdA = _context.Connection.CreateCommand();
-                    cmdA.Transaction = tx;
-                    cmdA.CommandText = "UPDATE Actions SET ActionType=$at, ServiceType=$st, Command=$cm, Parameters=$pm WHERE Id=$id";
-                    if (rule.Action is FlexibleAutomationTool.Core.Actions.InternalActions.MessageBoxAction ma)
+                    // Handle MacroAction updates: ensure ActionType stays as 'Macro', remove old child actions/items and insert new ones
+                    if (rule.Action is FlexibleAutomationTool.Core.Actions.MacroAction mac)
                     {
-                        cmdA.Parameters.AddWithValue("$at", "MessageBox");
-                        cmdA.Parameters.AddWithValue("$st", (object)DBNull.Value);
-                        cmdA.Parameters.AddWithValue("$cm", ma.Title ?? string.Empty);
-                        cmdA.Parameters.AddWithValue("$pm", ma.Message ?? string.Empty);
-                    }
-                    else if (rule.Action is FlexibleAutomationTool.Core.Actions.InternalActions.RunProgramAction ra)
-                    {
-                        cmdA.Parameters.AddWithValue("$at", "RunProgram");
-                        cmdA.Parameters.AddWithValue("$st", (object)DBNull.Value);
-                        cmdA.Parameters.AddWithValue("$cm", ra.Path ?? string.Empty);
-                        cmdA.Parameters.AddWithValue("$pm", ra.Arguments ?? (object)DBNull.Value);
-                    }
-                    else if (rule.Action is FlexibleAutomationTool.Core.Actions.InternalActions.OpenUrlAction ua)
-                    {
-                        cmdA.Parameters.AddWithValue("$at", "OpenUrl");
-                        cmdA.Parameters.AddWithValue("$st", (object)DBNull.Value);
-                        cmdA.Parameters.AddWithValue("$cm", ua.Url ?? string.Empty);
-                        cmdA.Parameters.AddWithValue("$pm", (object)DBNull.Value);
-                    }
-                    else if (rule.Action is FlexibleAutomationTool.Core.Actions.InternalActions.FileWriteAction fa)
-                    {
-                        cmdA.Parameters.AddWithValue("$at", "FileWrite");
-                        cmdA.Parameters.AddWithValue("$st", (object)DBNull.Value);
-                        cmdA.Parameters.AddWithValue("$cm", fa.FilePath ?? string.Empty);
-                        cmdA.Parameters.AddWithValue("$pm", fa.Content ?? string.Empty);
+                        // Update main action row to be Macro
+                        using var cmdAUpdate = _context.Connection.CreateCommand();
+                        cmdAUpdate.Transaction = tx;
+                        cmdAUpdate.CommandText = "UPDATE Actions SET ActionType=$at, ServiceType=$st, Command=$cm, Parameters=$pm WHERE Id=$id";
+                        cmdAUpdate.Parameters.AddWithValue("$at", "Macro");
+                        cmdAUpdate.Parameters.AddWithValue("$st", (object)DBNull.Value);
+                        cmdAUpdate.Parameters.AddWithValue("$cm", (object)DBNull.Value);
+                        cmdAUpdate.Parameters.AddWithValue("$pm", (object)DBNull.Value);
+                        cmdAUpdate.Parameters.AddWithValue("$id", actionId);
+                        cmdAUpdate.ExecuteNonQuery();
+
+                        // Collect existing child action ids
+                        var existingChildIds = new List<long>();
+                        using (var cmdGetItems = _context.Connection.CreateCommand())
+                        {
+                            cmdGetItems.Transaction = tx;
+                            cmdGetItems.CommandText = "SELECT ChildActionId FROM MacroActionItems WHERE MacroActionId=$mid";
+                            cmdGetItems.Parameters.AddWithValue("$mid", actionId);
+                            using var rdr = cmdGetItems.ExecuteReader();
+                            while (rdr.Read())
+                                existingChildIds.Add(rdr.GetInt64(0));
+                        }
+
+                        // Delete MacroActionItems for this macro
+                        using (var cmdDelItems = _context.Connection.CreateCommand())
+                        {
+                            cmdDelItems.Transaction = tx;
+                            cmdDelItems.CommandText = "DELETE FROM MacroActionItems WHERE MacroActionId=$mid";
+                            cmdDelItems.Parameters.AddWithValue("$mid", actionId);
+                            cmdDelItems.ExecuteNonQuery();
+                        }
+
+                        // Delete old child action rows
+                        if (existingChildIds.Count > 0)
+                        {
+                            // build a parameterized IN clause
+                            var idx = 0;
+                            var sb = new System.Text.StringBuilder();
+                            foreach (var cid in existingChildIds)
+                            {
+                                if (idx > 0) sb.Append(',');
+                                sb.Append("$cid" + idx);
+                                idx++;
+                            }
+
+                            using var cmdDelChildren = _context.Connection.CreateCommand();
+                            cmdDelChildren.Transaction = tx;
+                            cmdDelChildren.CommandText = $"DELETE FROM Actions WHERE Id IN ({sb})";
+                            idx = 0;
+                            foreach (var cid in existingChildIds)
+                            {
+                                cmdDelChildren.Parameters.AddWithValue("$cid" + (idx++), cid);
+                            }
+                            cmdDelChildren.ExecuteNonQuery();
+                        }
+
+                        // Insert new child actions and MacroActionItems
+                        int order = 0;
+                        foreach (var child in mac.Actions)
+                        {
+                            using var cmdChild = _context.Connection.CreateCommand();
+                            cmdChild.Transaction = tx;
+                            cmdChild.CommandText = "INSERT INTO Actions (ActionType, ServiceType, Command, Parameters) VALUES ($at,$st,$cm,$pm); SELECT last_insert_rowid();";
+
+                            if (child is FlexibleAutomationTool.Core.Actions.InternalActions.MessageBoxAction cma)
+                            {
+                                cmdChild.Parameters.AddWithValue("$at", "MessageBox");
+                                cmdChild.Parameters.AddWithValue("$st", (object)DBNull.Value);
+                                cmdChild.Parameters.AddWithValue("$cm", cma.Title ?? string.Empty);
+                                cmdChild.Parameters.AddWithValue("$pm", cma.Message ?? string.Empty);
+                            }
+                            else if (child is FlexibleAutomationTool.Core.Actions.InternalActions.RunProgramAction cra)
+                            {
+                                cmdChild.Parameters.AddWithValue("$at", "RunProgram");
+                                cmdChild.Parameters.AddWithValue("$st", (object)DBNull.Value);
+                                cmdChild.Parameters.AddWithValue("$cm", cra.Path ?? string.Empty);
+                                cmdChild.Parameters.AddWithValue("$pm", cra.Arguments ?? (object)DBNull.Value);
+                            }
+                            else if (child is FlexibleAutomationTool.Core.Actions.InternalActions.OpenUrlAction cua)
+                            {
+                                cmdChild.Parameters.AddWithValue("$at", "OpenUrl");
+                                cmdChild.Parameters.AddWithValue("$st", (object)DBNull.Value);
+                                cmdChild.Parameters.AddWithValue("$cm", cua.Url ?? string.Empty);
+                                cmdChild.Parameters.AddWithValue("$pm", (object)DBNull.Value);
+                            }
+                            else if (child is FlexibleAutomationTool.Core.Actions.InternalActions.FileWriteAction cfa)
+                            {
+                                cmdChild.Parameters.AddWithValue("$at", "FileWrite");
+                                cmdChild.Parameters.AddWithValue("$st", (object)DBNull.Value);
+                                cmdChild.Parameters.AddWithValue("$cm", cfa.FilePath ?? string.Empty);
+                                cmdChild.Parameters.AddWithValue("$pm", cfa.Content ?? string.Empty);
+                            }
+                            else
+                            {
+                                cmdChild.Parameters.AddWithValue("$at", child?.GetType().Name ?? "Unknown");
+                                cmdChild.Parameters.AddWithValue("$st", (object)DBNull.Value);
+                                cmdChild.Parameters.AddWithValue("$cm", (object)DBNull.Value);
+                                cmdChild.Parameters.AddWithValue("$pm", (object)DBNull.Value);
+                            }
+
+                            var childId = (long)cmdChild.ExecuteScalar();
+
+                            using var cmdItem = _context.Connection.CreateCommand();
+                            cmdItem.Transaction = tx;
+                            cmdItem.CommandText = "INSERT INTO MacroActionItems (MacroActionId, ChildActionId, OrderIndex) VALUES ($mid,$cid,$ord);";
+                            cmdItem.Parameters.AddWithValue("$mid", actionId);
+                            cmdItem.Parameters.AddWithValue("$cid", childId);
+                            cmdItem.Parameters.AddWithValue("$ord", order++);
+                            cmdItem.ExecuteNonQuery();
+                        }
                     }
                     else
                     {
-                        cmdA.Parameters.AddWithValue("$at", rule.Action?.GetType().Name ?? "Unknown");
-                        cmdA.Parameters.AddWithValue("$st", (object)DBNull.Value);
-                        cmdA.Parameters.AddWithValue("$cm", (object)DBNull.Value);
-                        cmdA.Parameters.AddWithValue("$pm", (object)DBNull.Value);
+                        using var cmdA = _context.Connection.CreateCommand();
+                        cmdA.Transaction = tx;
+                        cmdA.CommandText = "UPDATE Actions SET ActionType=$at, ServiceType=$st, Command=$cm, Parameters=$pm WHERE Id=$id";
+                        if (rule.Action is FlexibleAutomationTool.Core.Actions.InternalActions.MessageBoxAction ma)
+                        {
+                            cmdA.Parameters.AddWithValue("$at", "MessageBox");
+                            cmdA.Parameters.AddWithValue("$st", (object)DBNull.Value);
+                            cmdA.Parameters.AddWithValue("$cm", ma.Title ?? string.Empty);
+                            cmdA.Parameters.AddWithValue("$pm", ma.Message ?? string.Empty);
+                        }
+                        else if (rule.Action is FlexibleAutomationTool.Core.Actions.InternalActions.RunProgramAction ra)
+                        {
+                            cmdA.Parameters.AddWithValue("$at", "RunProgram");
+                            cmdA.Parameters.AddWithValue("$st", (object)DBNull.Value);
+                            cmdA.Parameters.AddWithValue("$cm", ra.Path ?? string.Empty);
+                            cmdA.Parameters.AddWithValue("$pm", ra.Arguments ?? (object)DBNull.Value);
+                        }
+                        else if (rule.Action is FlexibleAutomationTool.Core.Actions.InternalActions.OpenUrlAction ua)
+                        {
+                            cmdA.Parameters.AddWithValue("$at", "OpenUrl");
+                            cmdA.Parameters.AddWithValue("$st", (object)DBNull.Value);
+                            cmdA.Parameters.AddWithValue("$cm", ua.Url ?? string.Empty);
+                            cmdA.Parameters.AddWithValue("$pm", (object)DBNull.Value);
+                        }
+                        else if (rule.Action is FlexibleAutomationTool.Core.Actions.InternalActions.FileWriteAction fa)
+                        {
+                            cmdA.Parameters.AddWithValue("$at", "FileWrite");
+                            cmdA.Parameters.AddWithValue("$st", (object)DBNull.Value);
+                            cmdA.Parameters.AddWithValue("$cm", fa.FilePath ?? string.Empty);
+                            cmdA.Parameters.AddWithValue("$pm", fa.Content ?? string.Empty);
+                        }
+                        else
+                        {
+                            cmdA.Parameters.AddWithValue("$at", rule.Action?.GetType().Name ?? "Unknown");
+                            cmdA.Parameters.AddWithValue("$st", (object)DBNull.Value);
+                            cmdA.Parameters.AddWithValue("$cm", (object)DBNull.Value);
+                            cmdA.Parameters.AddWithValue("$pm", (object)DBNull.Value);
+                        }
+                        cmdA.Parameters.AddWithValue("$id", actionId);
+                        cmdA.ExecuteNonQuery();
                     }
-                    cmdA.Parameters.AddWithValue("$id", actionId);
-                    cmdA.ExecuteNonQuery();
                 }
 
                 using var cmdR = _context.Connection.CreateCommand();
