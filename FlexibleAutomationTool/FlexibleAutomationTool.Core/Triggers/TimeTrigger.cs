@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.ComponentModel;
 
 namespace FlexibleAutomationTool.Core.Triggers
 {
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class TimeTrigger : Trigger
     {
         // run at a specific hour/minute
@@ -28,5 +30,7 @@ namespace FlexibleAutomationTool.Core.Triggers
             return false;
         }
         public override bool Validate() => Hour >= 0 && Hour < 24 && Minute >= 0 && Minute < 60;
+
+        public override string ToString() => $"{GetType().Name}: {Hour:D2}:{Minute:D2}";
     }
 }

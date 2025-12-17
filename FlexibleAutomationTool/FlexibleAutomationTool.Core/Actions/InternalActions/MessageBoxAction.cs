@@ -1,4 +1,5 @@
 ﻿using FlexibleAutomationTool.Core.Interfaces;
+using System.ComponentModel;
 
 namespace FlexibleAutomationTool.Core.Actions.InternalActions
 {
@@ -8,6 +9,7 @@ namespace FlexibleAutomationTool.Core.Actions.InternalActions
         public string Title { get; set; } = "";
 
         // Allows DI via property so interpreter can create actions without requiring the service at construction time
+        [Browsable(false)]
         public IMessageBoxService? MessageBoxService { get; set; }
 
         public MessageBoxAction()

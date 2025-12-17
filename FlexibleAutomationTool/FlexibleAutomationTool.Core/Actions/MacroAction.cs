@@ -3,12 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.ComponentModel;
+using System.ComponentModel.Design.Serialization;
+using System.Collections.ObjectModel;
 
 namespace FlexibleAutomationTool.Core.Actions
 {
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class MacroAction : ActionBase
     {
-        public List<ActionBase> Actions { get; set; } = new();
+        // Expose the list as a browsable property so PropertyGrid can expand it
+        [Browsable(true)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public BindingList<ActionBase> Actions { get; set; } = new BindingList<ActionBase>();
 
         public override void Execute()
         {
@@ -35,5 +42,7 @@ namespace FlexibleAutomationTool.Core.Actions
         }
 
         public override bool Validate() => Actions.Count > 0;
+
+        public override string ToString() => $"{GetType().Name} ({Actions?.Count ?? 0} actions)";
     }
 }

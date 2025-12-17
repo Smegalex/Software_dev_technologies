@@ -7,6 +7,8 @@ using FlexibleAutomationTool.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
 using FlexibleAutomationTool.Core.Facades;
 using System.Diagnostics;
+using System.ComponentModel;
+using System.Windows.Forms;
 
 namespace FlexibleAutomationTool.UI
 {
@@ -20,6 +22,15 @@ namespace FlexibleAutomationTool.UI
         private readonly MessageBoxAction _messageBoxAction;
         private readonly AutomationEventHandler _eventHandler;
         private readonly IServiceProvider _serviceProvider;
+
+        // Track currently attached MacroAction and associated rule name for logging
+        private FlexibleAutomationTool.Core.Actions.MacroAction? _attachedMacro;
+        private string? _attachedMacroRuleName;
+
+        // Timer to debounce ListChanged events from BindingList when editing via PropertyGrid collection editor
+        private System.Windows.Forms.Timer? _macroEditTimer;
+        private string? _pendingMacroLogName;
+        private bool _macroTemporarilyDetached = false;
 
         // Constructor updated to receive dependencies from DI
         public MainForm(
@@ -42,7 +53,24 @@ namespace FlexibleAutomationTool.UI
                 this.ShowInTaskbar = true;
                 this.Opacity = 1.0;
                 Debug.WriteLine("MainForm ctor: initialized and set visibility properties");
-                this.Shown += (s, e) => Debug.WriteLine("MainForm Shown event fired");
+                // Bring window to front when shown so it appears in Alt+Tab order as expected
+                this.Shown += (s, e) =>
+                {
+                    try
+                    {
+                        // Temporary TopMost toggle is a reliable way to ensure the window gets foreground focus
+                        this.TopMost = true;
+                        this.Activate();
+                        this.BringToFront();
+                        this.TopMost = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("Failed to bring MainForm to front: " + ex);
+                    }
+
+                    Debug.WriteLine("MainForm Shown event fired");
+                };
             }
             catch (Exception ex)
             {
@@ -57,6 +85,18 @@ namespace FlexibleAutomationTool.UI
             _messageBoxAction = messageBoxAction ?? throw new ArgumentNullException(nameof(messageBoxAction));
             _eventHandler = eventHandler ?? throw new ArgumentNullException(nameof(eventHandler));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+
+            // Wire property grid events for logging (only on edits)
+            try
+            {
+                propertyGridRule.PropertyValueChanged += PropertyGridRule_PropertyValueChanged;
+                // allow deselecting a rule by clicking empty area in the list box
+                listBoxRules.MouseDown += ListBoxRules_MouseDown;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Failed to attach handlers: " + ex);
+            }
 
             // Initialization that may throw should not prevent form from showing
             try
@@ -96,6 +136,18 @@ namespace FlexibleAutomationTool.UI
             _eventHandler?.Dispose();
             // Stop engine and scheduler to ensure background work ends
             _facade?.Stop();
+
+            // detach any macro subscriptions
+            DetachMacroSubscription();
+
+            // stop and dispose timer
+            if (_macroEditTimer != null)
+            {
+                _macroEditTimer.Stop();
+                _macroEditTimer.Tick -= MacroEditTimer_Tick;
+                _macroEditTimer.Dispose();
+                _macroEditTimer = null;
+            }
         }
 
         // Start / Stop
@@ -152,6 +204,9 @@ namespace FlexibleAutomationTool.UI
 
         private void listBoxRules_SelectedIndexChanged(object sender, EventArgs e)
         {
+            // detach any previous macro subscription
+            DetachMacroSubscription();
+
             if (listBoxRules.SelectedItem is Rule selected)
             {
                 try
@@ -161,11 +216,125 @@ namespace FlexibleAutomationTool.UI
                 catch
                 {
                 }
+
+                // if selected rule contains a MacroAction, attach to its Actions.ListChanged
+                if (selected.Action is FlexibleAutomationTool.Core.Actions.MacroAction mac)
+                {
+                    AttachMacroSubscription(mac, selected.Name);
+                }
             }
             else
             {
                 try { propertyGridRule.SelectedObject = null; } catch { }
             }
+        }
+
+        // Clear selection when clicking empty area in the rules list so user can view global history
+        private void ListBoxRules_MouseDown(object? sender, MouseEventArgs e)
+        {
+            try
+            {
+                if (sender is ListBox lb)
+                {
+                    var idx = lb.IndexFromPoint(e.Location);
+                    if (idx == ListBox.NoMatches)
+                    {
+                        // clear selection and property grid
+                        lb.ClearSelected();
+                        try { propertyGridRule.SelectedObject = null; } catch { }
+                        // no logging for UI deselect as requested
+
+                        // detach macro subscription when deselecting
+                        DetachMacroSubscription();
+                    }
+                }
+            }
+            catch { }
+        }
+
+        // Attach/detach helpers for MacroAction collection edits
+        private void AttachMacroSubscription(FlexibleAutomationTool.Core.Actions.MacroAction mac, string ruleName)
+        {
+            try
+            {
+                DetachMacroSubscription();
+                _attachedMacro = mac;
+                _attachedMacroRuleName = ruleName;
+                _macroTemporarilyDetached = false;
+                // BindingList provides ListChanged event when collection editor changes collection
+                _attachedMacro.Actions.ListChanged += MacroActions_ListChanged;
+            }
+            catch { }
+        }
+
+        private void DetachMacroSubscription()
+        {
+            try
+            {
+                if (_attachedMacro != null)
+                {
+                    // If temporarily detached we may already have removed handler; use try/catch
+                    try { _attachedMacro.Actions.ListChanged -= MacroActions_ListChanged; } catch { }
+                    _attachedMacro = null;
+                    _attachedMacroRuleName = null;
+                    _macroTemporarilyDetached = false;
+                }
+            }
+            catch { }
+        }
+
+        private void MacroActions_ListChanged(object? sender, ListChangedEventArgs e)
+        {
+            try
+            {
+                if (_attachedMacro == null) return;
+
+                // Temporarily detach to avoid receiving multiple events for the same edit operation
+                if (!_macroTemporarilyDetached)
+                {
+                    try { _attachedMacro.Actions.ListChanged -= MacroActions_ListChanged; } catch { }
+                    _macroTemporarilyDetached = true;
+                }
+
+                // Debounce multiple ListChanged events fired by the PropertyGrid collection editor
+                _pendingMacroLogName = _attachedMacroRuleName ?? "PropertyGrid";
+
+                if (_macroEditTimer == null)
+                {
+                    _macroEditTimer = new System.Windows.Forms.Timer();
+                    _macroEditTimer.Interval = 250; // ms
+                    _macroEditTimer.Tick += MacroEditTimer_Tick;
+                }
+
+                // restart timer
+                _macroEditTimer.Stop();
+                _macroEditTimer.Start();
+            }
+            catch { }
+        }
+
+        private void MacroEditTimer_Tick(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (_macroEditTimer != null)
+                {
+                    _macroEditTimer.Stop();
+                }
+
+                var loggedBy = _pendingMacroLogName ?? "PropertyGrid";
+                _logger.Log(loggedBy, "Edited: Actions");
+
+                _pendingMacroLogName = null;
+
+                // Reattach handler after edit completed so future edits will be observed
+                if (_attachedMacro != null && _macroTemporarilyDetached)
+                {
+                    try { _attachedMacro.Actions.ListChanged += MacroActions_ListChanged; } catch { }
+                    _macroTemporarilyDetached = false;
+                }
+            }
+            catch { }
         }
 
         // New: View History for selected rule or global
@@ -203,6 +372,63 @@ namespace FlexibleAutomationTool.UI
                     RefreshRulesList();
                 }
             }
+        }
+
+        // PropertyGrid logging for edits only
+        private void PropertyGridRule_PropertyValueChanged(object s, PropertyValueChangedEventArgs e)
+        {
+            try
+            {
+                var obj = propertyGridRule.SelectedObject;
+                var loggedBy = (obj is Rule r) ? r.Name : obj?.ToString() ?? "PropertyGrid";
+
+                // Use PropertyDescriptor name if available to get the single final property name
+                var propName = e.ChangedItem?.PropertyDescriptor?.Name;
+                if (string.IsNullOrEmpty(propName))
+                    propName = e.ChangedItem?.Label ?? string.Empty;
+
+                if (!string.IsNullOrEmpty(propName))
+                {
+                    _logger.Log(loggedBy, $"Edited: {propName}");
+
+                    // If rule name changed, refresh list display so new name appears
+                    if (string.Equals(propName, "Name", StringComparison.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            // replace the selected item with itself to force the ListBox to redraw using updated ToString()
+                            var selIdx = listBoxRules.SelectedIndex;
+                            if (selIdx >= 0 && selIdx < listBoxRules.Items.Count)
+                            {
+                                var objItem = listBoxRules.Items[selIdx];
+                                listBoxRules.BeginUpdate();
+                                listBoxRules.Items[selIdx] = objItem;
+                                listBoxRules.EndUpdate();
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                else
+                {
+                    _logger.Log(loggedBy, "Edited");
+                }
+            }
+            catch { }
+        }
+
+        private string GetFullGridItemPath(GridItem? item)
+        {
+            if (item == null) return string.Empty;
+            var parts = new List<string>();
+            var cur = item;
+            while (cur != null)
+            {
+                parts.Add(cur.Label);
+                cur = cur.Parent;
+            }
+            parts.Reverse();
+            return string.Join(".", parts);
         }
     }
 }

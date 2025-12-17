@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.ComponentModel;
 
 namespace FlexibleAutomationTool.Core.Services
 {
@@ -64,7 +65,11 @@ namespace FlexibleAutomationTool.Core.Services
                 }
             }
 
-            var macro = new MacroAction { Actions = actionList };
+            var macro = new MacroAction();
+            // populate the BindingList from the parsed action list
+            foreach (var a in actionList)
+                macro.Actions.Add(a);
+
             var rule = new Rule { Name = name, Action = macro, Trigger = new Triggers.EventTrigger() };
             _repo.Add(rule);
             _logger.Log(name, "Created macro rule");
