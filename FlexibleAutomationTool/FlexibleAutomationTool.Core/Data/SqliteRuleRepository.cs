@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Text;
 using FlexibleAutomationTool.Core.Models;
 using FlexibleAutomationTool.Core.Repositories;
+using FlexibleAutomationTool.Core.Triggers;
+using FlexibleAutomationTool.Core.Actions;
 
 namespace FlexibleAutomationTool.Core.Data
 {
@@ -11,6 +13,9 @@ namespace FlexibleAutomationTool.Core.Data
     {
         private readonly SqliteDataContext _context;
         private readonly object _lock = new();
+
+        // Cache rule instances so triggers (which are in-memory objects) are stable across calls
+        private readonly Dictionary<int, Rule> _cache = new();
 
         public SqliteRuleRepository(SqliteDataContext context)
         {
@@ -25,12 +30,13 @@ namespace FlexibleAutomationTool.Core.Data
                 using var cmd = _context.Connection.CreateCommand();
                 cmd.CommandText = @"SELECT r.Id, r.Name, r.Description, r.IsActive,
 t.TriggerType, t.Schedule, t.EventSource, t.Condition,
-a.ActionType, a.ServiceType, a.Command, a.Parameters, a.Id as ActionId
+ a.ActionType, a.ServiceType, a.Command, a.Parameters, a.Id as ActionId
 FROM Rules r
 JOIN Triggers t ON r.TriggerId = t.Id
 JOIN Actions a ON r.ActionId = a.Id
 ORDER BY r.Id";
                 using var rdr = cmd.ExecuteReader();
+                var seen = new HashSet<int>();
                 while (rdr.Read())
                 {
                     var id = rdr.GetInt32(0);
@@ -40,7 +46,7 @@ ORDER BY r.Id";
 
                     var triggerType = rdr.IsDBNull(4) ? null : rdr.GetString(4);
                     var schedule = rdr.IsDBNull(5) ? null : rdr.GetString(5);
-                    var eventSource = rdr.IsDBNull(6) ? null : rdr.GetString(6);
+                    var _eventSource = rdr.IsDBNull(6) ? null : rdr.GetString(6);
                     var condition = rdr.IsDBNull(7) ? null : rdr.GetString(7);
 
                     var actionType = rdr.IsDBNull(8) ? null : rdr.GetString(8);
@@ -49,42 +55,63 @@ ORDER BY r.Id";
                     var parameters = rdr.IsDBNull(11) ? null : rdr.GetString(11);
                     var actionId = rdr.IsDBNull(12) ? 0 : rdr.GetInt32(12);
 
-                    var rule = new Rule { Id = id, Name = name, Description = desc, IsActive = isActive };
+                    Rule rule;
+                    if (_cache.TryGetValue(id, out var cached))
+                    {
+                        rule = cached;
+                        // update basic fields
+                        rule.Name = name;
+                        rule.Description = desc;
+                        rule.IsActive = isActive;
+                    }
+                    else
+                    {
+                        rule = new Rule { Id = id, Name = name, Description = desc, IsActive = isActive };
+                        _cache[id] = rule;
+                    }
 
                     // Reconstruct trigger
+                    Trigger trig;
                     if (string.Equals(triggerType, "TimeTrigger", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(schedule))
                     {
                         var parts = schedule.Split(':');
                         if (parts.Length == 2 && int.TryParse(parts[0], out var hour) && int.TryParse(parts[1], out var minute))
-                            rule.Trigger = new FlexibleAutomationTool.Core.Triggers.TimeTrigger { Hour = hour, Minute = minute };
+                            trig = new FlexibleAutomationTool.Core.Triggers.TimeTrigger { Hour = hour, Minute = minute };
                         else
-                            rule.Trigger = new FlexibleAutomationTool.Core.Triggers.EventTrigger(eventSource, null);
+                            trig = new FlexibleAutomationTool.Core.Triggers.EventTrigger(null);
+                    }
+                    else if (string.Equals(triggerType, "ManualTrigger", StringComparison.OrdinalIgnoreCase))
+                    {
+                        trig = new FlexibleAutomationTool.Core.Triggers.ManualTrigger();
                     }
                     else if (string.Equals(triggerType, "EventTrigger", StringComparison.OrdinalIgnoreCase))
                     {
-                        rule.Trigger = new FlexibleAutomationTool.Core.Triggers.EventTrigger(eventSource, null);
+                        trig = new FlexibleAutomationTool.Core.Triggers.EventTrigger(null);
                     }
                     else
                     {
-                        rule.Trigger = new FlexibleAutomationTool.Core.Triggers.EventTrigger(null, null);
+                        trig = new FlexibleAutomationTool.Core.Triggers.EventTrigger(null);
                     }
 
+                    rule.Trigger = trig;
+
                     // Reconstruct action
+                    ActionBase action;
                     if (string.Equals(actionType, "MessageBox", StringComparison.OrdinalIgnoreCase))
                     {
-                        rule.Action = new FlexibleAutomationTool.Core.Actions.InternalActions.MessageBoxAction { Title = command ?? string.Empty, Message = parameters ?? string.Empty };
+                        action = new FlexibleAutomationTool.Core.Actions.InternalActions.MessageBoxAction { Title = command ?? string.Empty, Message = parameters ?? string.Empty };
                     }
                     else if (string.Equals(actionType, "RunProgram", StringComparison.OrdinalIgnoreCase))
                     {
-                        rule.Action = new FlexibleAutomationTool.Core.Actions.InternalActions.RunProgramAction { Path = command ?? string.Empty, Arguments = parameters };
+                        action = new FlexibleAutomationTool.Core.Actions.InternalActions.RunProgramAction { Path = command ?? string.Empty, Arguments = parameters };
                     }
                     else if (string.Equals(actionType, "OpenUrl", StringComparison.OrdinalIgnoreCase))
                     {
-                        rule.Action = new FlexibleAutomationTool.Core.Actions.InternalActions.OpenUrlAction { Url = command ?? string.Empty };
+                        action = new FlexibleAutomationTool.Core.Actions.InternalActions.OpenUrlAction { Url = command ?? string.Empty };
                     }
                     else if (string.Equals(actionType, "FileWrite", StringComparison.OrdinalIgnoreCase))
                     {
-                        rule.Action = new FlexibleAutomationTool.Core.Actions.InternalActions.FileWriteAction { FilePath = command ?? string.Empty, Content = parameters ?? string.Empty };
+                        action = new FlexibleAutomationTool.Core.Actions.InternalActions.FileWriteAction { FilePath = command ?? string.Empty, Content = parameters ?? string.Empty };
                     }
                     else if (string.Equals(actionType, "Macro", StringComparison.OrdinalIgnoreCase) && actionId != 0)
                     {
@@ -124,16 +151,28 @@ ORDER BY r.Id";
                             }
                         }
 
-                        rule.Action = macro;
+                        action = macro;
                     }
                     else
                     {
                         // Default to MessageBoxAction placeholder to avoid nulls
-                        rule.Action = new FlexibleAutomationTool.Core.Actions.InternalActions.MessageBoxAction { Title = string.Empty, Message = string.Empty };
+                        action = new FlexibleAutomationTool.Core.Actions.InternalActions.MessageBoxAction { Title = string.Empty, Message = string.Empty };
                     }
 
+                    rule.Action = action;
+
+                    seen.Add(id);
                     list.Add(rule);
                 }
+
+                // Remove any cached rules that no longer exist in DB
+                var toRemove = new List<int>();
+                foreach (var k in _cache.Keys)
+                {
+                    if (!seen.Contains(k)) toRemove.Add(k);
+                }
+                foreach (var rId in toRemove)
+                    _cache.Remove(rId);
             }
 
             return list;
@@ -151,11 +190,19 @@ ORDER BY r.Id";
                 cmdT.Parameters.AddWithValue("$es", (object)DBNull.Value);
                 cmdT.Parameters.AddWithValue("$cond", (object)DBNull.Value);
             }
+            else if (rule.Trigger is FlexibleAutomationTool.Core.Triggers.ManualTrigger)
+            {
+                cmdT.Parameters.AddWithValue("$tt", "ManualTrigger");
+                cmdT.Parameters.AddWithValue("$sch", (object)DBNull.Value);
+                cmdT.Parameters.AddWithValue("$es", (object)DBNull.Value);
+                cmdT.Parameters.AddWithValue("$cond", (object)DBNull.Value);
+            }
             else if (rule.Trigger is FlexibleAutomationTool.Core.Triggers.EventTrigger et)
             {
                 cmdT.Parameters.AddWithValue("$tt", "EventTrigger");
                 cmdT.Parameters.AddWithValue("$sch", (object)DBNull.Value);
-                cmdT.Parameters.AddWithValue("$es", et.EventSource?.ToString() ?? (object)DBNull.Value);
+                // EventTrigger no longer uses EventSource
+                cmdT.Parameters.AddWithValue("$es", (object)DBNull.Value);
                 cmdT.Parameters.AddWithValue("$cond", et.Condition == null ? (object)DBNull.Value : et.Condition.ToString());
             }
             else
@@ -307,6 +354,9 @@ ORDER BY r.Id";
                 rule.Id = (int)id;
 
                 tx.Commit();
+
+                // cache the newly added rule instance so triggers are consistent
+                _cache[rule.Id] = rule;
             }
         }
 
@@ -342,11 +392,18 @@ ORDER BY r.Id";
                         cmdT.Parameters.AddWithValue("$es", (object)DBNull.Value);
                         cmdT.Parameters.AddWithValue("$cond", (object)DBNull.Value);
                     }
+                    else if (rule.Trigger is FlexibleAutomationTool.Core.Triggers.ManualTrigger)
+                    {
+                        cmdT.Parameters.AddWithValue("$tt", "ManualTrigger");
+                        cmdT.Parameters.AddWithValue("$sch", (object)DBNull.Value);
+                        cmdT.Parameters.AddWithValue("$es", (object)DBNull.Value);
+                        cmdT.Parameters.AddWithValue("$cond", (object)DBNull.Value);
+                    }
                     else if (rule.Trigger is FlexibleAutomationTool.Core.Triggers.EventTrigger et)
                     {
                         cmdT.Parameters.AddWithValue("$tt", "EventTrigger");
                         cmdT.Parameters.AddWithValue("$sch", (object)DBNull.Value);
-                        cmdT.Parameters.AddWithValue("$es", et.EventSource?.ToString() ?? (object)DBNull.Value);
+                        cmdT.Parameters.AddWithValue("$es", (object)DBNull.Value);
                         cmdT.Parameters.AddWithValue("$cond", et.Condition == null ? (object)DBNull.Value : et.Condition.ToString());
                     }
                     else
@@ -531,6 +588,16 @@ ORDER BY r.Id";
                 cmdR.ExecuteNonQuery();
 
                 tx.Commit();
+
+                // Update cache entry if present
+                if (_cache.TryGetValue(rule.Id, out var existing))
+                {
+                    existing.Name = rule.Name;
+                    existing.Description = rule.Description;
+                    existing.IsActive = rule.IsActive;
+                    existing.Trigger = rule.Trigger;
+                    existing.Action = rule.Action;
+                }
             }
         }
 
@@ -540,6 +607,12 @@ ORDER BY r.Id";
             cmd.CommandText = "DELETE FROM Rules WHERE Id=$id";
             cmd.Parameters.AddWithValue("$id", id);
             cmd.ExecuteNonQuery();
+
+            // remove from cache
+            lock (_lock)
+            {
+                _cache.Remove(id);
+            }
         }
 
         public void Dispose()

@@ -9,6 +9,7 @@ using FlexibleAutomationTool.Core.Facades;
 using System.Diagnostics;
 using System.ComponentModel;
 using System.Windows.Forms;
+using FlexibleAutomationTool.Core.Actions;
 
 namespace FlexibleAutomationTool.UI
 {
@@ -177,21 +178,6 @@ namespace FlexibleAutomationTool.UI
             }
         }
 
-        private Rule BuildRuleFromForm()
-        {
-            // TODO: replace with real CreateRuleForm dialog. For now build a simple rule using a MessageBoxAction
-            var r = new Rule
-            {
-                Name = "HelloRule",
-                Description = "Sample rule created from UI",
-                Trigger = new FlexibleAutomationTool.Core.Triggers.EventTrigger(null),
-                Action = new Core.Actions.InternalActions.MessageBoxAction(_messageBoxService) { Title = "Rule", Message = "Rule executed" },
-                IsActive = true
-            };
-
-            return r;
-        }
-
         private void RefreshRulesList()
         {
             listBoxRules.Items.Clear();
@@ -200,6 +186,9 @@ namespace FlexibleAutomationTool.UI
             {
                 listBoxRules.Items.Add(r);
             }
+
+            // update manual execute button visibility
+            btnManualExecute.Visible = listBoxRules.SelectedItem is Rule;
         }
 
         private void listBoxRules_SelectedIndexChanged(object sender, EventArgs e)
@@ -227,6 +216,9 @@ namespace FlexibleAutomationTool.UI
             {
                 try { propertyGridRule.SelectedObject = null; } catch { }
             }
+
+            // update manual execute button visibility
+            btnManualExecute.Visible = listBoxRules.SelectedItem is Rule;
         }
 
         // Clear selection when clicking empty area in the rules list so user can view global history
@@ -250,6 +242,9 @@ namespace FlexibleAutomationTool.UI
                 }
             }
             catch { }
+
+            // update manual execute button visibility
+            btnManualExecute.Visible = listBoxRules.SelectedItem is Rule;
         }
 
         // Attach/detach helpers for MacroAction collection edits
@@ -417,18 +412,93 @@ namespace FlexibleAutomationTool.UI
             catch { }
         }
 
-        private string GetFullGridItemPath(GridItem? item)
+        // Manual Execute: run selected rule ignoring IsActive or trigger
+        private void BtnManualExecute_Click(object? sender, EventArgs e)
         {
-            if (item == null) return string.Empty;
-            var parts = new List<string>();
-            var cur = item;
-            while (cur != null)
+            try
             {
-                parts.Add(cur.Label);
-                cur = cur.Parent;
+                if (listBoxRules.SelectedItem is Rule selected)
+                {
+                    // Inject platform services into action before executing
+                    InjectPlatformServicesIntoAction(selected.Action);
+
+                    // Execute regardless of IsActive or trigger
+                    try
+                    {
+                        selected.Execute();
+                        _logger.Log(selected.Name, "Manual Execute");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Log(selected.Name, "Manual Execute Failed: " + ex.Message);
+                        _messageBoxService.Show("Execution failed: " + ex.Message, "Error");
+                    }
+                }
             }
-            parts.Reverse();
-            return string.Join(".", parts);
+            catch { }
         }
+
+        private void InjectPlatformServicesIntoAction(ActionBase action)
+        {
+            if (action is MessageBoxAction mba)
+            {
+                var svc = _svcManager.Get<IMessageBoxService>(nameof(IMessageBoxService));
+                if (svc != null) mba.MessageBoxService = svc;
+            }
+            else if (action is MacroAction mac)
+            {
+                foreach (var a in mac.Actions)
+                {
+                    InjectPlatformServicesIntoAction(a);
+                }
+            }
+        }
+
+        // Manual Activate: raise manual activation on ManualTrigger instances
+        private void BtnManualActivate_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                var rules = _repo.GetAll();
+                foreach (var r in rules)
+                {
+                    if (r.Trigger is FlexibleAutomationTool.Core.Triggers.ManualTrigger mt)
+                    {
+                        // Signal the manual trigger
+                        mt.RaiseEvent();
+
+                        // If the trigger is now ready, execute immediately instead of waiting for the scheduler
+                        try
+                        {
+                            if (r.CheckTrigger())
+                            {
+                                // Inject any required platform services into actions (e.g., IMessageBoxService)
+                                InjectPlatformServicesIntoAction(r.Action);
+
+                                // Use the same dispatcher the engine uses so execution and logging are consistent
+                                var dispatcher = _serviceProvider.GetRequiredService<FlexibleAutomationTool.Core.Services.ICommandDispatcher>();
+                                dispatcher.Dispatch(r);
+
+                                _logger.Log(r.Name, "Manual Activation: executed");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Log(r.Name, "Manual Activation failed: " + ex.Message);
+                        }
+                    }
+                }
+
+                _logger.Log("Manual", "Manual Activation triggered");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Manual activate failed: " + ex);
+            }
+        }
+
+        // Designer-wired handlers (matching case used in Designer)
+        private void btnManualExecute_Click(object sender, EventArgs e) => BtnManualExecute_Click(sender, e);
+        private void btnManualActivate_Click(object sender, EventArgs e) => BtnManualActivate_Click(sender, e);
     }
 }

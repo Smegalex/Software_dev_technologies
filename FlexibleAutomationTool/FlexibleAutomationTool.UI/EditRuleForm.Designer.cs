@@ -107,7 +107,7 @@ namespace FlexibleAutomationTool.UI
             this.cmbTriggerType.FormattingEnabled = true;
             this.cmbTriggerType.Items.AddRange(new object[] {
             "Time",
-            "Event"});
+            "Manual"});
             this.cmbTriggerType.Location = new System.Drawing.Point(120, 70);
             this.cmbTriggerType.Name = "cmbTriggerType";
             this.cmbTriggerType.Size = new System.Drawing.Size(200, 23);

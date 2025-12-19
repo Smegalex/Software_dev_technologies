@@ -32,11 +32,16 @@ namespace FlexibleAutomationTool.UI
 
         private void UpdateTriggerControls()
         {
-            var isTime = cmbTriggerType.SelectedItem?.ToString() == "Time";
+            var sel = cmbTriggerType.SelectedItem?.ToString();
+            var isTime = sel == "Time";
+            var isEvent = sel == "Event";
+            var isManual = sel == "Manual";
+
             nudHour.Enabled = isTime;
             nudMinute.Enabled = isTime;
-            txtEventSource.Enabled = !isTime;
-            txtEventCondition.Enabled = !isTime;
+            // Only Event uses EventSource/Condition; Manual has no extra data
+            txtEventSource.Enabled = isEvent;
+            txtEventCondition.Enabled = isEvent;
 
             // Also adjust visibility of labels to keep UI clear
             lblHour.Visible = isTime;
@@ -44,10 +49,10 @@ namespace FlexibleAutomationTool.UI
             lblMinute.Visible = isTime;
             nudMinute.Visible = isTime;
 
-            lblEventSource.Visible = !isTime;
-            txtEventSource.Visible = !isTime;
-            lblCondition.Visible = !isTime;
-            txtEventCondition.Visible = !isTime;
+            lblEventSource.Visible = isEvent;
+            txtEventSource.Visible = isEvent;
+            lblCondition.Visible = isEvent;
+            txtEventCondition.Visible = isEvent;
         }
 
         private void UpdateActionControls()
@@ -108,20 +113,25 @@ namespace FlexibleAutomationTool.UI
 
             // Build trigger
             Trigger trigger;
-            if (cmbTriggerType.SelectedItem?.ToString() == "Time")
+            var sel = cmbTriggerType.SelectedItem?.ToString();
+            if (sel == "Time")
             {
                 trigger = new TimeTrigger { Hour = (int)nudHour.Value, Minute = (int)nudMinute.Value };
             }
+            else if (sel == "Manual")
+            {
+                // Manual trigger has no extra data
+                trigger = new ManualTrigger();
+            }
             else
             {
-                var src = string.IsNullOrWhiteSpace(txtEventSource.Text) ? null : txtEventSource.Text;
                 var condText = string.IsNullOrWhiteSpace(txtEventCondition.Text) ? null : txtEventCondition.Text;
                 Func<object?, bool>? cond = null;
                 if (!string.IsNullOrWhiteSpace(condText))
                 {
                     cond = (obj) => obj?.ToString()?.IndexOf(condText, StringComparison.OrdinalIgnoreCase) >= 0;
                 }
-                trigger = new EventTrigger(src, cond);
+                trigger = new EventTrigger(cond);
             }
 
             // Build action

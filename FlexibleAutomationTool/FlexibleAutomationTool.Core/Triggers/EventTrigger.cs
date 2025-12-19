@@ -8,19 +8,12 @@ namespace FlexibleAutomationTool.Core.Triggers
         private object? _lastEventData;
         private readonly object _lock = new();
 
-        // Optional name for the trigger
-        public string Name { get; set; } = string.Empty;
-
-        // EventSource can be any object (publisher) or an identifier for the source
-        public object? EventSource { get; }
-
         // Condition receives the last event data and returns true if the trigger should fire.
         // If null, any raised event will cause execution.
         public Func<object?, bool>? Condition { get; }
 
-        public EventTrigger(object? eventSource = null, Func<object?, bool>? condition = null)
+        public EventTrigger(Func<object?, bool>? condition = null)
         {
-            EventSource = eventSource;
             Condition = condition;
         }
 

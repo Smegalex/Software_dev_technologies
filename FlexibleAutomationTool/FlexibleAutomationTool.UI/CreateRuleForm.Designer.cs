@@ -138,7 +138,7 @@ namespace FlexibleAutomationTool.UI
             // cmbTriggerType
             // 
             cmbTriggerType.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbTriggerType.Items.AddRange(new object[] { "Time", "Event" });
+            cmbTriggerType.Items.AddRange(new object[] { "Time", "Manual" });
             cmbTriggerType.Location = new Point(140, 70);
             cmbTriggerType.Name = "cmbTriggerType";
             cmbTriggerType.Size = new Size(220, 23);

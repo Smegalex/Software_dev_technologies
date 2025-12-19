@@ -33,10 +33,16 @@ namespace FlexibleAutomationTool.UI
                 nudHour.Value = tt.Hour;
                 nudMinute.Value = tt.Minute;
             }
+            else if (rule.Trigger is ManualTrigger)
+            {
+                cmbTriggerType.SelectedItem = "Manual";
+                // Manual triggers have no extra data
+                txtEventSource.Text = string.Empty;
+            }
             else if (rule.Trigger is EventTrigger et)
             {
                 cmbTriggerType.SelectedItem = "Event";
-                txtEventSource.Text = et.EventSource?.ToString();
+                txtEventSource.Text = ""; // EventTrigger no longer stores an EventSource string
                 // cannot restore condition expression reliably
             }
 
@@ -95,21 +101,26 @@ namespace FlexibleAutomationTool.UI
 
         private void UpdateTriggerControls()
         {
-            var isTime = cmbTriggerType.SelectedItem?.ToString() == "Time";
+            var sel = cmbTriggerType.SelectedItem?.ToString();
+            var isTime = sel == "Time";
+            var isEvent = sel == "Event";
+            var isManual = sel == "Manual";
+
             nudHour.Enabled = isTime;
             nudMinute.Enabled = isTime;
-            txtEventSource.Enabled = !isTime;
-            txtEventCondition.Enabled = !isTime;
+            // Only Event uses EventSource/Condition; Manual has no extra data
+            txtEventSource.Enabled = isEvent;
+            txtEventCondition.Enabled = isEvent;
 
             lblHour.Visible = isTime;
             nudHour.Visible = isTime;
             lblMinute.Visible = isTime;
             nudMinute.Visible = isTime;
 
-            lblEventSource.Visible = !isTime;
-            txtEventSource.Visible = !isTime;
-            lblCondition.Visible = !isTime;
-            txtEventCondition.Visible = !isTime;
+            lblEventSource.Visible = isEvent;
+            txtEventSource.Visible = isEvent;
+            lblCondition.Visible = isEvent;
+            txtEventCondition.Visible = isEvent;
         }
 
         private void UpdateActionControls()
@@ -171,9 +182,14 @@ namespace FlexibleAutomationTool.UI
             EditedRule.Description = string.IsNullOrWhiteSpace(txtDescription.Text) ? null : txtDescription.Text.Trim();
 
             // build trigger
-            if (cmbTriggerType.SelectedItem?.ToString() == "Time")
+            var sel = cmbTriggerType.SelectedItem?.ToString();
+            if (sel == "Time")
             {
                 EditedRule.Trigger = new TimeTrigger { Hour = (int)nudHour.Value, Minute = (int)nudMinute.Value };
+            }
+            else if (sel == "Manual")
+            {
+                EditedRule.Trigger = new ManualTrigger();
             }
             else
             {
@@ -183,7 +199,7 @@ namespace FlexibleAutomationTool.UI
                     var condText = txtEventCondition.Text.Trim();
                     cond = (obj) => obj?.ToString()?.IndexOf(condText, StringComparison.OrdinalIgnoreCase) >= 0;
                 }
-                EditedRule.Trigger = new EventTrigger(string.IsNullOrWhiteSpace(txtEventSource.Text) ? null : txtEventSource.Text, cond);
+                EditedRule.Trigger = new EventTrigger(cond);
             }
 
             // build action

@@ -36,6 +36,8 @@
             btnEditRule = new Button();
             listBoxRules = new ListBox();
             propertyGridRule = new PropertyGrid();
+            btnManualExecute = new Button();
+            btnManualActivate = new Button();
             SuspendLayout();
             // 
             // btnStart
@@ -102,9 +104,9 @@
             // 
             listBoxRules.FormattingEnabled = true;
             listBoxRules.ItemHeight = 15;
-            listBoxRules.Location = new Point(12, 110);
+            listBoxRules.Location = new Point(12, 137);
             listBoxRules.Name = "listBoxRules";
-            listBoxRules.Size = new Size(240, 484);
+            listBoxRules.Size = new Size(240, 454);
             listBoxRules.TabIndex = 5;
             listBoxRules.SelectedIndexChanged += listBoxRules_SelectedIndexChanged;
             // 
@@ -114,6 +116,27 @@
             propertyGridRule.Name = "propertyGridRule";
             propertyGridRule.Size = new Size(632, 582);
             propertyGridRule.TabIndex = 9;
+            // 
+            // btnManualExecute
+            // 
+            btnManualExecute.Location = new Point(12, 108);
+            btnManualExecute.Name = "btnManualExecute";
+            btnManualExecute.Size = new Size(120, 23);
+            btnManualExecute.TabIndex = 10;
+            btnManualExecute.Text = "Manual Execute";
+            btnManualExecute.UseVisualStyleBackColor = true;
+            btnManualExecute.Visible = false;
+            btnManualExecute.Click += btnManualExecute_Click;
+            // 
+            // btnManualActivate
+            // 
+            btnManualActivate.Location = new Point(140, 108);
+            btnManualActivate.Name = "btnManualActivate";
+            btnManualActivate.Size = new Size(110, 23);
+            btnManualActivate.TabIndex = 11;
+            btnManualActivate.Text = "Manual Activate";
+            btnManualActivate.UseVisualStyleBackColor = true;
+            btnManualActivate.Click += btnManualActivate_Click;
             // 
             // MainForm
             // 
@@ -128,6 +151,8 @@
             Controls.Add(btnAddRule);
             Controls.Add(btnStop);
             Controls.Add(btnStart);
+            Controls.Add(btnManualActivate);
+            Controls.Add(btnManualExecute);
             Margin = new Padding(2);
             Name = "MainForm";
             Text = "MainForm";
@@ -144,5 +169,7 @@
         private Button btnViewHistory;
         private Button btnEditRule;
         private PropertyGrid propertyGridRule;
+        private Button btnManualExecute;
+        private Button btnManualActivate;
     }
 }
