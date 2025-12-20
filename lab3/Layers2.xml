@@ -1,0 +1,238 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+  <diagram name="FAT Architecture" id="fat-architecture">
+    <mxGraphModel dx="4351" dy="2476" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ui-layer" parent="1" style="swimlane;whiteSpace=wrap;html=1;fontSize=14;fontStyle=1" value="Шар представлення (UI Layer)" vertex="1">
+          <mxGeometry height="120" width="300" x="-810" y="-805" as="geometry" />
+        </mxCell>
+        <mxCell id="gui" parent="ui-layer" style="rounded=1;whiteSpace=wrap;html=1;" value="FAT.Client.GUI.exe&lt;br&gt;&lt;i&gt;WinForms Interface&lt;/i&gt;" vertex="1">
+          <mxGeometry height="60" width="220" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="app-logic" parent="1" style="swimlane;whiteSpace=wrap;html=1;fontSize=14;fontStyle=1" value="Прикладна логіка (Application Logic)" vertex="1">
+          <mxGeometry height="280" width="640" x="-810" y="-645" as="geometry" />
+        </mxCell>
+        <mxCell id="engine" parent="app-logic" style="rounded=1;whiteSpace=wrap;html=1;" value="Engine / Facade&lt;br&gt;&lt;i&gt;Координація виконання&lt;/i&gt;" vertex="1">
+          <mxGeometry height="60" width="160" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="scheduler" parent="app-logic" style="rounded=1;whiteSpace=wrap;html=1;" value="Scheduler&lt;br&gt;&lt;i&gt;Планування та опитування&lt;/i&gt;" vertex="1">
+          <mxGeometry height="60" width="160" x="460" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="trigger-strategy" parent="app-logic" style="rounded=1;whiteSpace=wrap;html=1;" value="TriggerStrategy&lt;br&gt;&lt;i&gt;Виявлення готових правил&lt;/i&gt;" vertex="1">
+          <mxGeometry height="60" width="160" x="240" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="dispatcher" parent="app-logic" style="rounded=1;whiteSpace=wrap;html=1;" value="CommandDispatcher&lt;br&gt;&lt;i&gt;Диспетчер команд&lt;/i&gt;" vertex="1">
+          <mxGeometry height="60" width="160" x="40" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="execution" parent="1" style="swimlane;whiteSpace=wrap;html=1;fontSize=14;fontStyle=1" value="Підсистема виконання" vertex="1">
+          <mxGeometry height="280" width="340" x="-1230" y="-645" as="geometry" />
+        </mxCell>
+        <mxCell id="actions" parent="execution" style="rounded=1;whiteSpace=wrap;html=1;" value="Action Objects&lt;br&gt;&lt;i&gt;Об&#39;єкти дій&lt;/i&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="10" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="macro-action" parent="execution" style="rounded=1;whiteSpace=wrap;html=1;" value="MacroAction&lt;br&gt;&lt;i&gt;Композиція дій&lt;/i&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="180" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="interpreter" parent="execution" style="rounded=1;whiteSpace=wrap;html=1;" value="Interpreter&lt;br&gt;&lt;i&gt;Інтерпретація макросів&lt;/i&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="120" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="platform" parent="1" style="swimlane;whiteSpace=wrap;html=1;fontSize=14;fontStyle=1" value="Платформні сервіси" vertex="1">
+          <mxGeometry height="220" width="300" x="-1190" y="-875" as="geometry" />
+        </mxCell>
+        <mxCell id="platform-factory" parent="platform" style="rounded=1;whiteSpace=wrap;html=1;" value="PlatformFactory&lt;br&gt;&lt;i&gt;Фабрика сервісів&lt;/i&gt;" vertex="1">
+          <mxGeometry height="50" width="220" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="service-manager" parent="platform" style="rounded=1;whiteSpace=wrap;html=1;" value="ServiceManager&lt;br&gt;&lt;i&gt;Менеджер сервісів&lt;/i&gt;" vertex="1">
+          <mxGeometry height="50" width="220" x="40" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="persistence" parent="1" style="swimlane;whiteSpace=wrap;html=1;fontSize=14;fontStyle=1" value="Шар збереження (Persistence Layer)" vertex="1">
+          <mxGeometry height="300" width="640" x="-810" y="-325" as="geometry" />
+        </mxCell>
+        <mxCell id="repositories" parent="persistence" style="rounded=1;whiteSpace=wrap;html=1;" value="Repositories&lt;br&gt;&lt;i&gt;CRUD операції&lt;/i&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sqlite" parent="persistence" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" value="SQLite Database" vertex="1">
+          <mxGeometry height="230" width="280" x="320" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="tables" parent="persistence" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;b&gt;Таблиці:&lt;/b&gt;&lt;br&gt;• Rules&lt;br&gt;• Triggers&lt;br&gt;• Actions&lt;br&gt;• MacroActionItems&lt;br&gt;• ExecutionHistory&lt;br&gt;• Services" vertex="1">
+          <mxGeometry height="150" width="240" x="340" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="infrastructure" parent="1" style="swimlane;whiteSpace=wrap;html=1;fontSize=14;fontStyle=1" value="Інфраструктура" vertex="1">
+          <mxGeometry height="190" width="300" x="-1150" y="-325" as="geometry" />
+        </mxCell>
+        <mxCell id="di-container" parent="infrastructure" style="rounded=1;whiteSpace=wrap;html=1;" value="DI Container&lt;br&gt;&lt;i&gt;Впровадження залежностей&lt;/i&gt;" vertex="1">
+          <mxGeometry height="50" width="220" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="logger" parent="infrastructure" style="rounded=1;whiteSpace=wrap;html=1;" value="Logger&lt;br&gt;&lt;i&gt;Логування&lt;/i&gt;" vertex="1">
+          <mxGeometry height="50" width="220" x="40" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" edge="1" parent="1" source="gui" target="engine">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c1-label" connectable="0" parent="c1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="використовує" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c2" edge="1" parent="1" source="engine" target="scheduler">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c2-label" connectable="0" parent="c2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="реагує на події" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c3" edge="1" parent="1" source="scheduler" style="exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="repositories">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-450" y="-435" />
+              <mxPoint x="-610" y="-345" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c3-label" connectable="0" parent="c3" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="опитує" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4" edge="1" parent="1" source="scheduler" target="trigger-strategy">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c4-label" connectable="0" parent="c4" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="використовує" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint x="-16" y="-4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c5" edge="1" parent="1" source="trigger-strategy" style="dashed=1" target="engine">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" edge="1" parent="1" source="engine" target="dispatcher">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c6-label" connectable="0" parent="c6" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="делегує виконання" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c7" edge="1" parent="1" source="dispatcher" target="actions">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-1170" y="-375" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c7-label" connectable="0" parent="c7" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="виконує" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c8" edge="1" parent="1" source="actions" target="macro-action">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c8-label" connectable="0" parent="c8" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="містить" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c9" edge="1" parent="1" source="interpreter" target="macro-action">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c9-label" connectable="0" parent="c9" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="створює" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c10" edge="1" parent="1" source="engine" target="interpreter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c10-label" connectable="0" parent="c10" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="використовує" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c11" edge="1" parent="1" source="engine" target="platform-factory">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c11-label" connectable="0" parent="c11" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="використовує" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c12" edge="1" parent="1" source="platform-factory" target="service-manager">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c12-label" connectable="0" parent="c12" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="керує" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c13" edge="1" parent="1" source="service-manager" target="actions">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-1160" y="-645" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c13-label" connectable="0" parent="c13" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="інтегрує" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c14" edge="1" parent="1" source="engine" target="repositories">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-580" y="-445" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c14-label" connectable="0" parent="c14" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=35;" value="записує результати" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint y="-13" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c15" edge="1" parent="1" source="repositories" target="sqlite">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c15-label" connectable="0" parent="c15" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="зберігає в" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c16" edge="1" parent="1" source="logger" target="sqlite">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c16-label" connectable="0" parent="c16" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="фіксує події" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c17" edge="1" parent="1" source="di-container" style="dashed=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" target="engine">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-870" y="-475" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c17-label" connectable="0" parent="c17" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="створює" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint x="30" y="-45" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c18" edge="1" parent="1" source="di-container" style="dashed=1" target="scheduler">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-500" y="-415" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c19" edge="1" parent="1" source="di-container" style="dashed=1" target="logger">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c20" edge="1" parent="1" source="di-container" style="dashed=1" target="repositories">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
