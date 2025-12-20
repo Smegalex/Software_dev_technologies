@@ -132,7 +132,7 @@ namespace FlexibleAutomationTool.UI
             // AutomationEventHandler needs SynchronizationContext.Current from the UI thread. Use factory to capture it.
             services.AddTransient<AutomationEventHandler>(sp =>
                 new AutomationEventHandler(
-                    sp.GetRequiredService<AutomationEngine>(),
+                    sp.GetRequiredService<IAutomationFacade>(),
                     sp.GetRequiredService<Logger>(),
                     sp.GetRequiredService<IMessageBoxService>(),
                     SynchronizationContext.Current

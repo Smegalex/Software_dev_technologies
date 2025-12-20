@@ -1,6 +1,7 @@
 ﻿using FlexibleAutomationTool.Core.Interfaces;
 using FlexibleAutomationTool.Core.Models;
 using FlexibleAutomationTool.Core.Services;
+using FlexibleAutomationTool.Core.Facades;
 
 namespace FlexibleAutomationTool.UI.Services
 {
@@ -10,7 +11,7 @@ namespace FlexibleAutomationTool.UI.Services
     /// </summary>
     public class AutomationEventHandler : IDisposable
     {
-        private readonly AutomationEngine _engine;
+        private readonly IAutomationFacade _engine;
         private readonly Logger _logger;
         private readonly IMessageBoxService _messageBoxService;
         private readonly SynchronizationContext? _uiContext;
@@ -23,7 +24,7 @@ namespace FlexibleAutomationTool.UI.Services
         public bool ShowMessageBoxOnFailure { get; set; } = true;
 
         public AutomationEventHandler(
-            AutomationEngine engine,
+            IAutomationFacade engine,
             Logger logger,
             IMessageBoxService messageBoxService,
             SynchronizationContext? uiContext = null)

@@ -22,7 +22,7 @@ namespace FlexibleAutomationTool.Core.Services
         private readonly Logger _logger;
         private readonly IInterpreter _interpreter;
         private readonly ICommandDispatcher _dispatcher;
-        private readonly FlexibleAutomationTool.Core.Factories.IPlatformFactory _factory;
+        private readonly Factories.IPlatformFactory _factory;
         private readonly IExecutionHistoryRepository? _historyRepo;
 
         public event Action<Rule>? RuleTriggered;
