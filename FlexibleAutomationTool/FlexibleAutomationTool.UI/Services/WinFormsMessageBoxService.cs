@@ -9,5 +9,4 @@ namespace FlexibleAutomationTool.UI.Services
             MessageBox.Show(message, title ?? "Info");
         }
     }
-
 }

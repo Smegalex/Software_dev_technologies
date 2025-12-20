@@ -8,7 +8,6 @@ namespace FlexibleAutomationTool.Core.Actions.InternalActions
         public string Message { get; set; } = "";
         public string Title { get; set; } = "";
 
-        // Allows DI via property so interpreter can create actions without requiring the service at construction time
         [Browsable(false)]
         public IMessageBoxService? MessageBoxService { get; set; }
 
@@ -16,7 +15,6 @@ namespace FlexibleAutomationTool.Core.Actions.InternalActions
         {
         }
 
-        // Backwards-compatible constructor used by UI code that provides the service at creation time
         public MessageBoxAction(IMessageBoxService service)
         {
             MessageBoxService = service;

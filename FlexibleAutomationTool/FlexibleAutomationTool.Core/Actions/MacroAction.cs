@@ -12,7 +12,6 @@ namespace FlexibleAutomationTool.Core.Actions
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class MacroAction : ActionBase
     {
-        // Expose the list as a browsable property so PropertyGrid can expand it
         [Browsable(true)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public BindingList<ActionBase> Actions { get; set; } = new BindingList<ActionBase>();
@@ -29,7 +28,6 @@ namespace FlexibleAutomationTool.Core.Actions
                 }
                 catch (Exception ex)
                 {
-                    // collect exceptions to report after attempting all actions
                     errors ??= new List<Exception>();
                     errors.Add(ex);
                 }
