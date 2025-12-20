@@ -5,13 +5,17 @@ using FlexibleAutomationTool.Core.Actions.InternalActions;
 
 namespace FlexibleAutomationTool.Core.Interpreter
 {
+    // Implements IInterpreter using Interpreter pattern with AST nodes
     public class SimpleMacroInterpreter : IInterpreter
     {
         public IEnumerable<ActionBase> ParseMacro(string macroText)
         {
-            var list = new List<ActionBase>();
+            var context = new InterpreterContext(macroText ?? string.Empty);
             if (string.IsNullOrWhiteSpace(macroText))
-                return list;
+                return context.Actions;
+
+            // Build AST as a sequence of expressions
+            var root = new SequenceExpression();
 
             var lines = macroText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var raw in lines)
@@ -23,18 +27,20 @@ namespace FlexibleAutomationTool.Core.Interpreter
                     var parts = rest.Split(' ', 2);
                     var path = parts[0];
                     var args = parts.Length > 1 ? parts[1] : null;
-                    list.Add(new RunProgramAction { Path = path, Arguments = args });
+                    root.Add(new RunExpression(path, args));
                 }
                 else if (line.StartsWith("MSG ", StringComparison.OrdinalIgnoreCase))
                 {
                     var msg = line.Substring(4).Trim();
-                    // Title not supported in shorthand
-                    list.Add(new MessageBoxAction { Message = msg, Title = "" });
+                    root.Add(new MessageExpression(msg));
                 }
-                // add other simple commands as needed
+                // other commands can be parsed into terminal expressions here
             }
 
-            return list;
+            // Interpret the AST (root interprets children recursively)
+            root.Interpret(context);
+
+            return context.Actions;
         }
     }
 }

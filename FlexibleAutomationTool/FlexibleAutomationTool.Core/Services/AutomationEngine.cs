@@ -120,16 +120,13 @@ namespace FlexibleAutomationTool.Core.Services
         {
             if (action == null) return;
 
-            // If action is a MessageBoxAction, set the service
             if (action is MessageBoxAction mba)
             {
-                // Prefer service from factory
                 var svc = _factory.CreateMessageBoxService();
                 if (svc != null)
                     mba.MessageBoxService = svc;
             }
 
-            // If action is MacroAction, recurse into children
             if (action is MacroAction mac)
             {
                 foreach (var child in mac.Actions)
